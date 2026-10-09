@@ -1,33 +1,51 @@
 import 'package:flutter/material.dart';
-import 'package:simple_animations/simple_animations.dart';
 
-class FadeAnimation extends StatelessWidget {
+class FadeAnimation extends StatefulWidget {
   final double delay;
   final Widget child;
 
-  FadeAnimation(this.delay, this.child);
+  const FadeAnimation(this.delay, this.child, {super.key});
+
+  @override
+  State<FadeAnimation> createState() => _FadeAnimationState();
+}
+
+class _FadeAnimationState extends State<FadeAnimation>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 500),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(Duration(milliseconds: (500 * widget.delay).round()), () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final tween = MultiTrackTween([
-      Track("opacity").add(Duration(milliseconds: 500), Tween(begin: 0.0, end: 1.0)),
-      Track("translateY").add(
-          Duration(milliseconds: 500), Tween(begin: -30.0, end: 0.0),
-          curve: Curves.easeOut)
-    ]);
-
-    return ControlledAnimation(
-      delay: Duration(milliseconds: (500 * delay).round()),
-      duration: tween.duration,
-      tween: tween,
-      child: child,
-      builderWithChild: (context, child, animation) => Opacity(
-        opacity: animation["opacity"],
-        child: Transform.translate(
-            offset: Offset(0, animation["translateY"]),
-            child: child
-        ),
-      ),
+    return AnimatedBuilder(
+      animation: _controller,
+      child: widget.child,
+      builder: (context, child) {
+        final t = _controller.value;
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, -30 * (1 - Curves.easeOut.transform(t))),
+            child: child,
+          ),
+        );
+      },
     );
   }
 }
