@@ -154,7 +154,7 @@ class _HomePage extends State<HomePage> {
               ],
             ),
           ),
-          onDismissed: (direction) {},
+          onDismissed: (direction) => setState(() => appoinments.removeAt(index)),
           child: Card(
             margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
             child: Padding(

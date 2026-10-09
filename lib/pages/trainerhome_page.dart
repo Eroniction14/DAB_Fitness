@@ -1,399 +1,399 @@
-import 'package:agora_flutter_quickstart/provider/booking_model.dart';
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+
+import '../provider/booking_model.dart';
 import '../provider/database_model.dart';
 import '../widgets/appBar_widget.dart';
-import 'package:date_time_picker/date_time_picker.dart';
-import 'package:solid_bottom_sheet/solid_bottom_sheet.dart';
-import 'package:agora_rtc_engine/agora_rtc_engine.dart';
-import 'package:permission_handler/permission_handler.dart';
 import './call_page.dart';
 
 class TrainerHome extends StatefulWidget {
   static const routeName = '/trainerHome';
+  const TrainerHome({super.key});
 
   @override
-  _TrainerHomeState createState() => _TrainerHomeState();
+  State<TrainerHome> createState() => _TrainerHomeState();
 }
 
 class _TrainerHomeState extends State<TrainerHome> {
-  String dateTime;
-  String title;
-  var _isInit = true;
-  ClientRole _role = ClientRole.Broadcaster;
-  var _isLoading = false;
-  List appoinments;
-  List liveClasses;
-  final GlobalKey<FormState> _formKey = GlobalKey();
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _isInit = true;
+  bool _isLoading = false;
+  bool _sheetOpen = false;
+
   @override
   void didChangeDependencies() {
-    if (_isInit) {
-      setState(() {
-        _isLoading = true;
-      });
-      Provider.of<Booking>(context, listen: false)
-          .getMyAppoinments()
-          .then((value) => appoinments =
-              Provider.of<Booking>(context, listen: false).getAppoinments)
-          .then(
-            (_) => Provider.of<Booking>(context, listen: false)
-                .loadLiveClassTrainer()
-                .then((value) {
-              liveClasses =
-                  Provider.of<Booking>(context, listen: false).getLiveClass;
-              setState(() {
-                _isLoading = false;
-              });
-            }),
-          );
-    }
-    _isInit = false;
     super.didChangeDependencies();
+    if (!_isInit) return;
+    _isInit = false;
+    _isLoading = true;
+    _load();
   }
 
-  void liveClass(final trainerName) {
-    _formKey.currentState.save();
-    List<String> dateTimeSplit = dateTime.split(" ");
-    Provider.of<Booking>(context, listen: false)
-        .startLiveClass(dateTimeSplit[0], dateTimeSplit[1], trainerName, title)
-        .then((value) {
-      appoinments = value;
-      _scaffoldKey.currentState.showSnackBar(
-        SnackBar(
-          content: Text("Class Scheduled"),
-          duration: Duration(seconds: 2),
+  Future<void> _load() async {
+    final booking = context.read<Booking>();
+    try {
+      await Future.wait([
+        booking.getMyAppoinments(),
+        booking.loadLiveClassTrainer(),
+      ]);
+    } catch (e) {
+      debugPrint('Failed to load trainer data: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _scheduleClass(String trainerName) async {
+    final details = await showDialog<_ClassDetails>(
+      context: context,
+      builder: (_) => const _LiveClassDialog(),
+    );
+    if (details == null || !mounted) return;
+
+    await context.read<Booking>().startLiveClass(
+          DateFormat('yyyy-MM-dd').format(details.date),
+          details.time,
+          trainerName,
+          details.title,
+        );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Class scheduled'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _onJoin(String channelName) async {
+    if (channelName.isEmpty) return;
+    final statuses =
+        await [Permission.camera, Permission.microphone].request();
+    if (!mounted) return;
+    if (statuses.values.any((s) => !s.isGranted)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Camera and microphone access are needed to join.'),
         ),
       );
-      Navigator.of(context).pop();
-    });
+      return;
+    }
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CallPage(
+          channelName: channelName,
+          role: ClientRoleType.clientRoleBroadcaster,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final trainer = Provider.of<DataBase>(context, listen: false).getTrainer;
-    print("data" + appoinments.toString());
-    return _isLoading
-        ? Center(
-            child: CircularProgressIndicator(
-              backgroundColor: Theme.of(context).colorScheme.surface,
+    final booking = context.watch<Booking>();
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    final trainer = context.read<DataBase>().getTrainer;
+
+    return Scaffold(
+      extendBody: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      body: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 10),
+        child: CustomScrollView(
+          slivers: [
+            MyAppbar("Hello, ${trainer.name}", "Home", false, trainer),
+            SliverFillRemaining(
+              child: _appointmentsList(booking.getAppoinments),
             ),
-          )
-        : Scaffold(
-            extendBody: true,
-            key: _scaffoldKey,
-            //backgroundColor: const Color(0xff000000),
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            body: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 10),
-              child: CustomScrollView(
-                slivers: [
-                  MyAppbar("Hello, ${trainer.name}", "Home", false, trainer),
-                  SliverFillRemaining(
-                    child: buildPage(),
-                  )
-                ],
-              ),
-            ),
-            bottomSheet: Consumer<Booking>(
-              builder: (context, value, child) => SolidBottomSheet(
-                elevation: 4,
-                toggleVisibilityOnTap: true,
-                headerBar: Container(
-                  height: 30,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(Icons.arrow_drop_up),
-                      Text("My Classes"),
-                      Icon(Icons.arrow_drop_up),
-                    ],
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
-                    ),
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xff00e0ff),
-                        const Color(0xff095e79),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                ),
-                body: appoinments.length != 0
-                    ? ListView.builder(
-                        itemBuilder: (context, index) {
-                          return Dismissible(
-                            key: ValueKey(index),
-                            background: Container(
-                              color: Theme.of(context).colorScheme.error,
-                              child: Icon(
-                                Icons.delete,
-                                color: Colors.white,
-                                size: 40,
-                              ),
-                              alignment: Alignment.centerRight,
-                              padding: EdgeInsets.only(right: 20),
-                              margin: EdgeInsets.symmetric(
-                                horizontal: 15,
-                                vertical: 4,
-                              ),
-                            ),
-                            direction: DismissDirection.endToStart,
-                            confirmDismiss: (direction) {
-                              return showDialog(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  title: Text('Are you sure?'),
-                                  content: Text(
-                                    'Do you want to cancel the appoinment',
-                                  ),
-                                  actions: <Widget>[
-                                    FlatButton(
-                                      child: Text('No'),
-                                      onPressed: () {
-                                        Navigator.of(ctx).pop(false);
-                                      },
-                                    ),
-                                    FlatButton(
-                                      child: Text('Yes'),
-                                      onPressed: () {
-                                        Navigator.of(ctx).pop(true);
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                            onDismissed: (direction) {},
-                            child: Card(
-                              margin: EdgeInsets.symmetric(
-                                horizontal: 15,
-                                vertical: 4,
-                              ),
-                              child: Padding(
-                                padding: EdgeInsets.all(8),
-                                child: ListTile(
-                                  leading: Icon(Icons.alarm_on),
-                                  title: Text(
-                                    liveClasses[index].date,
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                  subtitle: Text(
-                                    liveClasses[index].title,
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  trailing: RaisedButton(
-                                    child: Text("Join"),
-                                    onPressed: () {
-                                      onJoin(liveClasses[index].channelName);
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        itemCount: liveClasses.length,
-                      )
-                    : Center(
-                        child: Text(
-                          "No Live Classes are scheduled",
-                          style: Theme.of(context).textTheme.displaySmall,
-                        ),
-                      ),
-              ),
-            ),
-            floatingActionButton: FloatingActionButton.extended(
-              onPressed: () => showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return Dialog(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20.0),
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: SingleChildScrollView(
-                        child: Container(
-                          height: 300,
-                          margin: const EdgeInsets.symmetric(vertical: 20),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Class Title",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 20,
-                                  ),
-                                ),
-                                TextFormField(
-                                  decoration: InputDecoration(
-                                    border: InputBorder.none,
-                                    hintText: 'Enter the Class Title',
-                                  ),
-                                  onSaved: (value) => title = value,
-                                ),
-                                SizedBox(
-                                  height: 20.0,
-                                ),
-                                buildDateTimePicker(),
-                                SizedBox(
-                                  height: 50.0,
-                                ),
-                                SizedBox(
-                                  width: 320.0,
-                                  child: RaisedButton(
-                                    onPressed: () => liveClass(trainer.name),
-                                    child: Text(
-                                      "Post",
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    color: const Color(0xFF1BC0C5),
-                                  ),
-                                )
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              label: Text("Live Class"),
-              icon: Icon(Icons.live_tv),
-            ),
-          );
+          ],
+        ),
+      ),
+      bottomSheet: _classesSheet(booking.getLiveClass),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _scheduleClass(trainer.name),
+        label: const Text("Live Class"),
+        icon: const Icon(Icons.live_tv),
+      ),
+    );
   }
 
-  Widget buildPage() {
+  // ---------- Bookings made with this trainer ----------
+
+  Widget _appointmentsList(List<Slot> appointments) {
+    if (appointments.isEmpty) {
+      return Center(
+        child: Text("No bookings yet",
+            style: Theme.of(context).textTheme.displaySmall),
+      );
+    }
+    const bold20 = TextStyle(fontSize: 20, fontWeight: FontWeight.bold);
     return ListView.separated(
+      padding: const EdgeInsets.only(bottom: 80),
+      itemCount: appointments.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 20),
       itemBuilder: (context, index) {
+        final slot = appointments[index];
         return Card(
           margin: const EdgeInsets.all(10),
           elevation: 5,
-          child: Container(
-            height: 200,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                Text(
-                  appoinments[index].user,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                Text(slot.user, style: bold20),
+                const SizedBox(height: 10),
+                Text("Date: ${slot.date}\nTime: ${slot.time}",
+                    textAlign: TextAlign.center, style: bold20),
+                const Divider(),
+                Text(slot.address, textAlign: TextAlign.center, style: bold20),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
                   ),
+                  onPressed: () {}, // TODO: cancel booking in Firebase
+                  child: const Text("Cancel", style: bold20),
                 ),
-                SizedBox(
-                  height: 10,
-                ),
-                Text(
-                  "Date: ${appoinments[index].date}\n Time: ${appoinments[index].time}",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Divider(),
-                Text(
-                  appoinments[index].address,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(
-                  height: 20,
-                ),
-                RaisedButton(
-                  child: Text(
-                    "Cancel",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  color: Colors.red,
-                  onPressed: () {},
-                )
               ],
             ),
           ),
         );
       },
-      separatorBuilder: (context, index) {
-        return SizedBox(
-          height: 20,
-        );
-      },
-      itemCount: appoinments.length,
     );
   }
 
-  Widget buildDateTimePicker() {
-    return DateTimePicker(
-      type: DateTimePickerType.dateTimeSeparate,
-      dateMask: 'd MMM, yyyy',
-      initialValue: DateTime.now().toString(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      icon: Icon(Icons.event),
-      dateLabelText: 'Date',
-      timeLabelText: "Hour",
-      selectableDayPredicate: (date) {
-        // Disable weekend days to select from the calendar
-        if (date.weekday == 7) {
-          return false;
-        }
+  // ---------- "My Classes" collapsible sheet ----------
 
-        return true;
-      },
-      onChanged: (val) => print(val),
-      validator: (val) {
-        print(val);
-        return null;
-      },
-      onSaved: (val) => dateTime = val.toString(),
-    );
-  }
-
-  Future<void> onJoin(String channelName) async {
-    if (channelName.isNotEmpty) {
-      // await for camera and mic permissions before pushing video page
-      await _handleCameraAndMic();
-      // push video page with given channel name
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CallPage(
-            channelName: channelName,
-            role: _role,
+  Widget _classesSheet(List<LiveClass> liveClasses) {
+    return Material(
+      elevation: 4,
+      color: Colors.transparent,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () => setState(() => _sheetOpen = !_sheetOpen),
+            child: Container(
+              height: 30,
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
+                ),
+                gradient: LinearGradient(
+                  colors: [Color(0xff00e0ff), Color(0xff095e79)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(_sheetOpen ? Icons.arrow_drop_down : Icons.arrow_drop_up),
+                  const Text("My Classes"),
+                  Icon(_sheetOpen ? Icons.arrow_drop_down : Icons.arrow_drop_up),
+                ],
+              ),
+            ),
           ),
-        ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+            child: _sheetOpen
+                ? Container(
+                    height: 300,
+                    color: Theme.of(context).colorScheme.surface,
+                    child: _classesList(liveClasses),
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _classesList(List<LiveClass> liveClasses) {
+    if (liveClasses.isEmpty) {
+      return Center(
+        child: Text("No live classes are scheduled",
+            style: Theme.of(context).textTheme.displaySmall),
       );
     }
+    return ListView.builder(
+      itemCount: liveClasses.length,
+      itemBuilder: (context, index) {
+        final liveClass = liveClasses[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: ListTile(
+              leading: const Icon(Icons.alarm_on),
+              title: Text(
+                "${liveClass.date}  ${liveClass.time}",
+                style: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18),
+              ),
+              subtitle: Text(
+                liveClass.title,
+                style: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16),
+              ),
+              trailing: ElevatedButton(
+                onPressed: () => _onJoin(liveClass.channelName),
+                child: const Text("Join"),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ---------- "Schedule a live class" dialog ----------
+
+class _ClassDetails {
+  final String title;
+  final DateTime date;
+  final TimeOfDay time;
+  const _ClassDetails(this.title, this.date, this.time);
+}
+
+class _LiveClassDialog extends StatefulWidget {
+  const _LiveClassDialog();
+
+  @override
+  State<_LiveClassDialog> createState() => _LiveClassDialogState();
+}
+
+class _LiveClassDialogState extends State<_LiveClassDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  DateTime? _date;
+  TimeOfDay? _time;
+  String? _error;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
   }
 
-  Future<void> _handleCameraAndMic() async {
-    await PermissionHandler().requestPermissions(
-      [PermissionGroup.camera, PermissionGroup.microphone],
+  bool _notSunday(DateTime d) => d.weekday != DateTime.sunday;
+
+  DateTime _firstSelectableDay() {
+    var day = DateUtils.dateOnly(DateTime.now());
+    if (!_notSunday(day)) day = day.add(const Duration(days: 1));
+    return day;
+  }
+
+  Future<void> _pickDate() async {
+    final first = _firstSelectableDay();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date ?? first,
+      firstDate: first,
+      lastDate: DateTime(2100),
+      selectableDayPredicate: _notSunday,
+    );
+    if (picked != null) setState(() => _date = picked);
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _time ?? TimeOfDay.now(),
+    );
+    if (picked != null) setState(() => _time = picked);
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    if (_date == null || _time == null) {
+      setState(() => _error = 'Pick a date and a time');
+      return;
+    }
+    Navigator.of(context).pop(
+      _ClassDetails(_titleController.text.trim(), _date!, _time!),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text("Class Title",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+              TextFormField(
+                controller: _titleController,
+                decoration:
+                    const InputDecoration(hintText: 'Enter the class title'),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Enter a title' : null,
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _pickDate,
+                      icon: const Icon(Icons.event),
+                      label: Text(_date == null
+                          ? 'Date'
+                          : DateFormat('d MMM, yyyy').format(_date!)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _pickTime,
+                      icon: const Icon(Icons.access_time),
+                      label: Text(
+                          _time == null ? 'Time' : _time!.format(context)),
+                    ),
+                  ),
+                ],
+              ),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(_error!,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.error)),
+                ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1BC0C5),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text("Post"),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
