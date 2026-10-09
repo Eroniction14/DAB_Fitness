@@ -3,9 +3,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 /// Email/password sign-in via Firebase Auth. The session is persisted by
 /// the SDK, so a signed-in user stays signed in across app restarts.
 class AuthService {
-  AuthService([FirebaseAuth? auth]) : _auth = auth ?? FirebaseAuth.instance;
+  AuthService([FirebaseAuth? auth]) : _authOverride = auth;
 
-  final FirebaseAuth _auth;
+  final FirebaseAuth? _authOverride;
+
+  // Resolved lazily so the class can be subclassed by test fakes without
+  // initialising Firebase.
+  FirebaseAuth get _auth => _authOverride ?? FirebaseAuth.instance;
 
   String? get currentUserId => _auth.currentUser?.uid;
 

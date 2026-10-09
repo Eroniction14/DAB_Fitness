@@ -116,15 +116,19 @@ class _TrainerListPageState extends State<TrainerListPage> {
             ),
           ),
           SafeArea(
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: SizedBox(
-                height: 440,
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: trainers.length,
-                  onPageChanged: (i) => setState(() => _index = i),
-                  itemBuilder: (context, i) => _trainerCard(trainers[i]),
+            child: LayoutBuilder(
+              // Up to 440 tall, but always leave room for the app bar.
+              builder: (context, constraints) => Align(
+                alignment: Alignment.bottomCenter,
+                child: SizedBox(
+                  height: (constraints.maxHeight - kToolbarHeight)
+                      .clamp(0.0, 440.0),
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: trainers.length,
+                    onPageChanged: (i) => setState(() => _index = i),
+                    itemBuilder: (context, i) => _trainerCard(trainers[i]),
+                  ),
                 ),
               ),
             ),
@@ -148,7 +152,11 @@ class _TrainerListPageState extends State<TrainerListPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(trainer.name, textAlign: TextAlign.center, style: bold20),
+              Text(trainer.name,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: bold20),
               const SizedBox(height: 8),
               Expanded(
                 child: GestureDetector(
@@ -161,18 +169,32 @@ class _TrainerListPageState extends State<TrainerListPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              Text("Age: ${trainer.age}", style: bold20),
-              const SizedBox(height: 4),
+              const SizedBox(height: 10),
+              // Age and rating share one row; the stars shrink on narrow
+              // screens instead of overflowing.
               Row(
                 children: [
-                  const Text("Rating: ", style: bold20),
-                  for (int i = 0; i < 5; i++)
-                    Icon(i < trainer.rating ? Icons.star : Icons.star_border,
-                        color: Colors.amber),
+                  Text("Age: ${trainer.age}", style: bold20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        children: [
+                          for (int i = 0; i < 5; i++)
+                            Icon(
+                                i < trainer.rating
+                                    ? Icons.star
+                                    : Icons.star_border,
+                                color: Colors.amber),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              const Divider(height: 20),
+              const Divider(height: 16),
               SizedBox(
                 height: 48,
                 child: ElevatedButton(

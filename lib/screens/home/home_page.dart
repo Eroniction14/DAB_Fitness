@@ -7,6 +7,7 @@ import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/widgets/app_bar_widget.dart';
 import 'package:dab_fitness/widgets/booking_tile.dart';
+import 'package:dab_fitness/widgets/collapsible_sheet.dart';
 import 'package:dab_fitness/widgets/video_player_widget.dart';
 
 class HomePage extends StatefulWidget {
@@ -20,7 +21,6 @@ class HomePage extends StatefulWidget {
 class _HomePage extends State<HomePage> {
   bool _isInit = true;
   bool _isLoading = false;
-  bool _sheetOpen = false;
 
   @override
   void didChangeDependencies() {
@@ -54,60 +54,10 @@ class _HomePage extends State<HomePage> {
           ],
         ),
       ),
-      bottomSheet: _sessionsSheet(),
-    );
-  }
-
-  // ---------- Sessions bottom sheet (replaces solid_bottom_sheet) ----------
-
-  Widget _sessionsSheet() {
-    return Material(
-      elevation: 4,
-      color: Colors.transparent,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GestureDetector(
-            onTap: () => setState(() => _sheetOpen = !_sheetOpen),
-            child: Container(
-              height: 30,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
-                gradient: LinearGradient(
-                  colors: [Color(0xff00e0ff), Color(0xff095e79)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                      _sheetOpen ? Icons.arrow_drop_down : Icons.arrow_drop_up),
-                  Text("Sessions",
-                      style: Theme.of(context).textTheme.titleMedium),
-                  Icon(
-                      _sheetOpen ? Icons.arrow_drop_down : Icons.arrow_drop_up),
-                ],
-              ),
-            ),
-          ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOut,
-            child: _sheetOpen
-                ? Container(
-                    height: 300,
-                    color: Theme.of(context).colorScheme.surface,
-                    child: _sessionsList(),
-                  )
-                : const SizedBox(width: double.infinity),
-          ),
-        ],
+      bottomSheet: CollapsibleSheet(
+        title: "Sessions",
+        titleStyle: Theme.of(context).textTheme.titleMedium,
+        child: _sessionsList(),
       ),
     );
   }

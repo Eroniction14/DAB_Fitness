@@ -53,6 +53,14 @@ class MyApp extends StatelessWidget {
             elevation: 4,
             shadowColor: Colors.grey,
           ),
+          // Dialogs default to headlineSmall/bodyMedium for title/content,
+          // and headlineSmall is white in this theme.
+          dialogTheme: DialogThemeData(
+            titleTextStyle: GoogleFonts.openSans(
+                color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
+            contentTextStyle:
+                GoogleFonts.lato(color: Colors.black87, fontSize: 16),
+          ),
           textTheme: TextTheme(
             displayLarge: GoogleFonts.openSans(
                 color: Colors.white, fontSize: 35, fontWeight: FontWeight.bold),

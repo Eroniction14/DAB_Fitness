@@ -11,6 +11,7 @@ import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/screens/live_class/call_page.dart';
 import 'package:dab_fitness/widgets/app_bar_widget.dart';
 import 'package:dab_fitness/widgets/booking_tile.dart';
+import 'package:dab_fitness/widgets/collapsible_sheet.dart';
 
 class TrainerHomePage extends StatefulWidget {
   static const routeName = '/trainerHome';
@@ -23,7 +24,6 @@ class TrainerHomePage extends StatefulWidget {
 class _TrainerHomePageState extends State<TrainerHomePage> {
   bool _isInit = true;
   bool _isLoading = false;
-  bool _sheetOpen = false;
 
   @override
   void didChangeDependencies() {
@@ -123,11 +123,19 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
           ],
         ),
       ),
-      bottomSheet: _classesSheet(booking.getLiveClass),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _scheduleClass(trainer.name),
-        label: const Text("Live Class"),
-        icon: const Icon(Icons.live_tv),
+      bottomSheet: CollapsibleSheet(
+        title: "My Classes",
+        child: _classesList(booking.getLiveClass),
+      ),
+      // Scaffold centres the FAB on the bottom sheet's top edge; lift it
+      // clear of the My Classes bar.
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: CollapsibleSheet.barHeight + 8),
+        child: FloatingActionButton.extended(
+          onPressed: () => _scheduleClass(trainer.name),
+          label: const Text("Live Class"),
+          icon: const Icon(Icons.live_tv),
+        ),
       ),
     );
   }
@@ -175,59 +183,6 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
           ),
         );
       },
-    );
-  }
-
-  // ---------- "My Classes" collapsible sheet ----------
-
-  Widget _classesSheet(List<LiveClass> liveClasses) {
-    return Material(
-      elevation: 4,
-      color: Colors.transparent,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GestureDetector(
-            onTap: () => setState(() => _sheetOpen = !_sheetOpen),
-            child: Container(
-              height: 30,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
-                gradient: LinearGradient(
-                  colors: [Color(0xff00e0ff), Color(0xff095e79)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                      _sheetOpen ? Icons.arrow_drop_down : Icons.arrow_drop_up),
-                  const Text("My Classes"),
-                  Icon(
-                      _sheetOpen ? Icons.arrow_drop_down : Icons.arrow_drop_up),
-                ],
-              ),
-            ),
-          ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOut,
-            child: _sheetOpen
-                ? Container(
-                    height: 300,
-                    color: Theme.of(context).colorScheme.surface,
-                    child: _classesList(liveClasses),
-                  )
-                : const SizedBox(width: double.infinity),
-          ),
-        ],
-      ),
     );
   }
 

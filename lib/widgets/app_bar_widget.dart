@@ -64,12 +64,15 @@ class MyAppbar extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              SizedBox(
-                width: 350,
-                child: Text(
-                  content,
-                  style: Theme.of(context).textTheme.displayLarge,
-                  overflow: TextOverflow.clip,
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 17),
+                  child: Text(
+                    content,
+                    style: Theme.of(context).textTheme.displayLarge,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
               if (ishome)

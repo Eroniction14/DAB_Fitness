@@ -10,10 +10,13 @@ import 'package:dab_fitness/models/user_profile.dart';
 /// Realtime Database access. Paths and field names match the schema in
 /// CLAUDE.md; keep them compatible with existing data.
 class DatabaseService {
-  DatabaseService([FirebaseDatabase? db])
-      : _db = db ?? FirebaseDatabase.instance;
+  DatabaseService([FirebaseDatabase? db]) : _dbOverride = db;
 
-  final FirebaseDatabase _db;
+  final FirebaseDatabase? _dbOverride;
+
+  // Resolved lazily so the class can be subclassed by test fakes without
+  // initialising Firebase.
+  FirebaseDatabase get _db => _dbOverride ?? FirebaseDatabase.instance;
 
   Future<Object?> _read(String path) async => (await _db.ref(path).get()).value;
 
