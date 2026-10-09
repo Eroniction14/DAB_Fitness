@@ -6,6 +6,7 @@ import 'package:dab_fitness/providers/auth_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/screens/home/home_page.dart';
 import 'package:dab_fitness/screens/trainer_home/trainer_home_page.dart';
+import 'package:dab_fitness/services/auth_service.dart';
 import 'package:dab_fitness/services/location_service.dart';
 import 'package:dab_fitness/widgets/fade_animation.dart';
 
@@ -51,15 +52,11 @@ class _SignUpDetailState extends State<SignUpDetail> {
       _data['Gender'] = _gender;
       _data['Address'] = await getCity();
 
-      final response = await auth.signUp(_data['email']!, _data['password']!);
-      if (response['error'] != null) {
-        if (mounted) _showError(authErrorMessage(response));
-        return;
-      }
+      final uid = await auth.signUp(_data['email']!, _data['password']!);
 
       final saved = _isTrainer
-          ? await database.registerTrainerData(auth.token, auth.userId, _data)
-          : await database.registerUserData(auth.token, auth.userId, _data);
+          ? await database.registerTrainerData(uid, _data)
+          : await database.registerUserData(uid, _data);
       if (!saved) {
         if (mounted) {
           _showError(
@@ -68,16 +65,16 @@ class _SignUpDetailState extends State<SignUpDetail> {
         return;
       }
 
-      final role = await database.loadData(auth.token, auth.userId);
+      final account = await database.loadData(uid);
       navigator.pushNamedAndRemoveUntil(
-        role == 2 ? TrainerHomePage.routeName : HomePage.routeName,
+        account == AccountType.trainer
+            ? TrainerHomePage.routeName
+            : HomePage.routeName,
         (_) => false,
       );
     } catch (e) {
       debugPrint('Sign up failed: $e');
-      if (mounted) {
-        _showError('Could not connect. Check your internet connection.');
-      }
+      if (mounted) _showError(authErrorMessage(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

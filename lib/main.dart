@@ -1,7 +1,9 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import 'package:dab_fitness/firebase_options.dart';
 import 'package:dab_fitness/providers/auth_model.dart';
 import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
@@ -15,7 +17,11 @@ import 'package:dab_fitness/screens/trainers/trainer_list_page.dart';
 import 'package:dab_fitness/screens/training/training_page.dart';
 import 'package:dab_fitness/screens/training/video_detail_page.dart';
 
-void main() => runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -27,8 +33,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthModel()),
         ChangeNotifierProvider(create: (_) => DatabaseModel()),
         ChangeNotifierProxyProvider<AuthModel, BookingModel>(
-          create: (_) => BookingModel(null, null),
-          update: (_, auth, __) => BookingModel(auth.token, auth.userId),
+          create: (_) => BookingModel(null),
+          // Only start fresh when a different account signs in.
+          update: (_, auth, previous) => previous?.userId == auth.userId
+              ? previous!
+              : BookingModel(auth.userId),
         ),
       ],
       child: MaterialApp(

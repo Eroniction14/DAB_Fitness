@@ -45,3 +45,6 @@ app.*.map.json
 
 analyze.txt
 ios/Flutter/ephemeral/
+
+# Local secrets (see config/env.example.json)
+/config/env.json

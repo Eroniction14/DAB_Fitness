@@ -9,11 +9,17 @@ on the Android emulator. We are now refactoring it into a proper production-styl
 ## Environment (Windows 11 — keep everything on E:, C: is nearly full)
 
 - Repo: `E:\DAB_Fitness` — work on branch `modernize`. `master` = untouched 2021 original.
+- `origin` is the ORIGINAL TEAM REPO (github.com/AJAY077-star/DAB_Fitness). NEVER push to
+  it. The user will add their own remote later; until then, do not push anywhere.
 - Flutter SDK: `E:\flutter` (stable 3.47.x). Android SDK: `E:\Android\Sdk`.
 - `ANDROID_HOME=E:\Android\Sdk`, `ANDROID_AVD_HOME=E:\Android\avd`,
   `GRADLE_USER_HOME=E:\Android\gradle`, `PUB_CACHE=E:\Android\pub-cache`.
 - Never install tools, caches or SDKs to C:. Configure any new tool to use E:.
-- Emulator: `emulator-5554` (Android API 37). Run with `flutter run -d emulator-5554`.
+- Emulator: `emulator-5554` (Android API 37). The user starts and stops it — do not.
+  Verify with `flutter build apk --debug --dart-define-from-file=config/env.json`
+  then `flutter install -d emulator-5554`. (VS Code: `.vscode/launch.json` adds the flag.)
+- `adb screencap` can return an all-black Flutter surface in some emulator sessions even
+  when the app is fine; if so, ask the user what the emulator window shows.
 - Shell is PowerShell. When writing files from PowerShell use UTF-8 without BOM.
 
 ## Android build fixes — do not remove
@@ -31,10 +37,14 @@ on the Android emulator. We are now refactoring it into a proper production-styl
 - Firebase project: `dab-fitness-acd05` (Spark/free plan).
 - Realtime Database: `https://dab-fitness-acd05-default-rtdb.firebaseio.com`
 - Auth: Email/Password enabled.
-- Currently accessed via hand-written REST calls (`http`). DECISION: migrate to the
-  official FlutterFire packages (`firebase_core`, `firebase_auth`, `firebase_database`)
-  configured with `flutterfire configure --project=dab-fitness-acd05`
-  (generates `lib/firebase_options.dart`).
+- Accessed with FlutterFire (`firebase_core`, `firebase_auth`, `firebase_database`),
+  configured by `flutterfire configure --project=dab-fitness-acd05 --platforms=android,ios`
+  (`lib/firebase_options.dart`, `android/app/google-services.json`, `firebase.json`).
+  All database access goes through `lib/services/database_service.dart`; auth through
+  `lib/services/auth_service.dart`. The auth session persists across restarts and the
+  splash screen routes a signed-in account straight to the user or trainer home.
+- Rules live in `database.rules.json` (publish in the console or
+  `firebase deploy --only database`).
 - Firebase Storage is NOT available on the free plan for new projects — do not add
   features that depend on it (trainer photos stay as bundled assets / placeholders).
 - Agora (video calls): project in testing mode (App ID only, empty token).
@@ -56,20 +66,33 @@ liveClass/{trainerUid}/{pushId}    { Date, Time, Id, user (trainer name), title,
 Dates are `yyyy-MM-dd`, times are `HH:mm`. Field-name casing is inconsistent (legacy);
 if you normalise it, migrate or read both spellings — do not silently break existing data.
 
-### Current security rules (update when schema changes, and tell the user to publish them)
+### Current security rules (`database.rules.json` — update when schema changes, and tell the user to publish them)
 
 - users/$uid and appointments/$uid: read/write only by that uid.
 - trainers: readable by any signed-in user; trainers/$uid writable only by that uid.
 - trainerAppointments/$trainerId: readable only by that trainer; a child is writable by
-  the trainer or by the user whose uid is in the booking's `Id` field.
+  the trainer, or by a user only if the existing and new `Id` are that user's uid
+  (users cannot create bookings in someone else's name or reassign them).
 - liveClass: readable by any signed-in user; liveClass/$uid writable only by that uid.
 
 ## Secrets
 
-`lib/providers/auth_model.dart` and `lib/config/agora_config.dart` currently hard-code the
-Firebase Web API key and Agora App ID. Move secrets into a git-ignored config
-(e.g. `--dart-define-from-file=config/env.json`, with a committed `env.example.json`).
-Never commit real keys. (`firebase_options.dart` from FlutterFire is fine to commit.)
+The Agora App ID comes from the git-ignored `config/env.json` (`AGORA_APP_ID`), read via
+`String.fromEnvironment` in `lib/config/agora_config.dart`. Always build/run with
+`--dart-define-from-file=config/env.json`; without it the app runs but live classes
+show "Agora App ID is missing". Template: `config/env.example.json`.
+Never commit real keys. (`firebase_options.dart` and `google-services.json` are fine.)
+Older commits on `modernize` still contain the Agora App ID and the Firebase Web API key;
+rotate the Agora App ID before this history is ever published.
+
+## iOS
+
+`ios/` was regenerated in Phase 2 with `flutter create --platforms=ios` (bundle id
+`com.dabfitness.dabFitness`, deployment target 15.0, camera/mic/location usage strings).
+iOS is UNVERIFIED until built on a Mac. Still to do there: `pod install`, add
+`GoogleService-Info.plist` (flutterfire on Windows did not write it; the app initialises
+from `firebase_options.dart`), and enable permission_handler's camera/microphone/location
+macros in the Podfile `post_install`.
 
 ## Refactor plan — one phase at a time, app must build and run after each
 
@@ -89,7 +112,7 @@ Ask the user before deleting anything that is not listed here.
 - Delete `android_old/`, dead code (e.g. launch_page tap-test, unused makeInput helpers).
 - Fix all analyzer warnings/infos.
 
-### Phase 2 — FlutterFire + config
+### Phase 2 — FlutterFire + config — DONE
 - firebase_core / firebase_auth / firebase_database replace the REST code.
 - Session persistence; splash routes to the correct home if already signed in.
 - Typed models with fromJson/toJson. Secrets out of source (see above).

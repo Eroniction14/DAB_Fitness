@@ -12,13 +12,15 @@ dependencies:
   agora_rtc_engine: ^6.6.4
   permission_handler: ^13.0.2
   provider: ^6.1.5+1
-  http: ^1.6.0
   location: ^10.0.2
   geocoding: ^5.0.0
   google_fonts: ^9.0.0
   video_player: ^2.14.1
   card_swiper: ^3.0.1
   intl: ^0.20.2
+  firebase_core: ^4.15.0
+  firebase_auth: ^6.7.0
+  firebase_database: ^12.6.0
 
 dev_dependencies:
   flutter_test:

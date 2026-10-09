@@ -1,6 +1,9 @@
 import 'package:dab_fitness/models/json_helpers.dart';
 
+/// A trainer account, stored at `trainers/{uid}`.
 class Trainer {
+  static const defaultImage = 'assets/images/Drake.jpg';
+
   final String name;
   final String age;
   final int rating;
@@ -13,6 +16,9 @@ class Trainer {
   final String address;
   final String image;
   final int experience;
+
+  /// ISO-8601 time the profile was created (the legacy `DateTime` field).
+  final String createdAt;
 
   Trainer({
     required this.name,
@@ -27,6 +33,7 @@ class Trainer {
     required this.trainerId,
     required this.address,
     required this.image,
+    required this.createdAt,
   });
 
   factory Trainer.fromJson(String id, Map<String, dynamic> d) => Trainer(
@@ -40,9 +47,24 @@ class Trainer {
         number: jsonString(d['Number']),
         gender: jsonString(d['Gender']),
         address: jsonString(d['Address']),
-        image: d['Image'] == null
-            ? 'assets/images/Drake.jpg'
-            : jsonString(d['Image']),
+        image: d['Image'] == null ? defaultImage : jsonString(d['Image']),
+        createdAt: jsonString(d['DateTime']),
         trainerId: id,
       );
+
+  Map<String, dynamic> toJson() => {
+        'DateTime': createdAt,
+        'Name': name,
+        'Email': email,
+        'Age': age,
+        'Number': number,
+        'Gender': gender,
+        'Description': description,
+        'Speciality': speciality,
+        'Address': address,
+        'Id': trainerId,
+        'rating': rating,
+        'Image': image,
+        'experience': experience,
+      };
 }

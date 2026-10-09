@@ -1,0 +1,36 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "trainers": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "appointments": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "trainerAppointments": {
+      "$trainerId": {
+        ".read": "auth != null && auth.uid === $trainerId",
+        "$key": {
+          ".write": "auth != null && (auth.uid === $trainerId || ((!data.exists() || data.child('Id').val() === auth.uid) && (!newData.exists() || newData.child('Id').val() === auth.uid)))"
+        }
+      }
+    },
+    "liveClass": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    }
+  }
+}

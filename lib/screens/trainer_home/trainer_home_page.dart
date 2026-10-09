@@ -54,19 +54,26 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
     );
     if (details == null || !mounted) return;
 
-    await context.read<BookingModel>().startLiveClass(
-          DateFormat('yyyy-MM-dd').format(details.date),
-          details.time,
-          trainerName,
-          details.title,
-        );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Class scheduled'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await context.read<BookingModel>().startLiveClass(
+            DateFormat('yyyy-MM-dd').format(details.date),
+            details.time,
+            trainerName,
+            details.title,
+          );
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Class scheduled'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Scheduling class failed: $e');
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Could not schedule the class.')),
+      );
+    }
   }
 
   Future<void> _onJoin(String channelName) async {

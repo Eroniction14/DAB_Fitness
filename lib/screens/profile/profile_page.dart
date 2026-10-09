@@ -159,8 +159,10 @@ class ProfilePage extends StatelessWidget {
             title: Text("Logout of this app"),
             onTap: () {
               final navigator = Navigator.of(context);
+              // Clear the whole stack so Back can't return to a signed-out home.
               Provider.of<AuthModel>(context, listen: false).logout().then(
-                  (_) => navigator.pushReplacementNamed(LoginPage.routeName));
+                  (_) => navigator.pushNamedAndRemoveUntil(
+                      LoginPage.routeName, (_) => false));
             },
           ),
         ],

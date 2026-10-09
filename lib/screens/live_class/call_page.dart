@@ -46,7 +46,8 @@ class _CallPageState extends State<CallPage> {
   Future<void> _start() async {
     if (agoraAppId.isEmpty) {
       setState(() => _error =
-          'Agora App ID is missing. Add it in lib/utils/settings.dart.');
+          'Agora App ID is missing. Add it to config/env.json and run with '
+              '--dart-define-from-file=config/env.json.');
       return;
     }
     try {

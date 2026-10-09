@@ -1,0 +1,25 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "dab-fitness-acd05",
+          "appId": "1:828713543436:android:eb0365db1370ef092f4b29",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "dab-fitness-acd05",
+          "configurations": {
+            "android": "1:828713543436:android:eb0365db1370ef092f4b29",
+            "ios": "1:828713543436:ios:f270972012ed2b3e2f4b29"
+          }
+        }
+      }
+    }
+  },
+  "database": {
+    "rules": "database.rules.json"
+  }
+}

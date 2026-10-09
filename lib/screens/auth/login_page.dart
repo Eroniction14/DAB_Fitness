@@ -7,6 +7,7 @@ import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/screens/auth/signup_page.dart';
 import 'package:dab_fitness/screens/home/home_page.dart';
 import 'package:dab_fitness/screens/trainer_home/trainer_home_page.dart';
+import 'package:dab_fitness/services/auth_service.dart';
 import 'package:dab_fitness/widgets/fade_animation.dart';
 
 class LoginPage extends StatefulWidget {
@@ -43,26 +44,23 @@ class _LoginPageState extends State<LoginPage> {
     final navigator = Navigator.of(context);
 
     try {
-      final response = await auth.signIn(_email, _password);
-      if (response['error'] != null) {
-        _showError(authErrorMessage(response));
-        return;
-      }
-
-      final role = await database.loadData(auth.token, auth.userId);
-      if (role == 1) {
-        navigator.pushReplacementNamed(HomePage.routeName);
-      } else if (role == 2) {
-        navigator.pushReplacementNamed(TrainerHomePage.routeName);
-      } else if (mounted) {
-        _showError(
-            'No profile found for this account. Please finish signing up.');
+      final uid = await auth.signIn(_email, _password);
+      final account = await database.loadData(uid);
+      switch (account) {
+        case AccountType.user:
+          navigator.pushReplacementNamed(HomePage.routeName);
+        case AccountType.trainer:
+          navigator.pushReplacementNamed(TrainerHomePage.routeName);
+        case AccountType.none:
+          await auth.logout();
+          if (mounted) {
+            _showError(
+                'No profile found for this account. Please finish signing up.');
+          }
       }
     } catch (e) {
       debugPrint('Login failed: $e');
-      if (mounted) {
-        _showError('Could not connect. Check your internet connection.');
-      }
+      if (mounted) _showError(authErrorMessage(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
