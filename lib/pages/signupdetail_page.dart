@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:geocoding/geocoding.dart' as geo;
-import 'package:location/location.dart';
 import 'package:provider/provider.dart';
 
 import '../animation/FadeAnimation.dart';
 import '../provider/auth_model.dart';
 import '../provider/database_model.dart';
+import '../utils/location_helper.dart';
 import './home_page.dart';
 import './trainerhome_page.dart';
 
@@ -38,39 +37,6 @@ class _SignUpDetailState extends State<SignUpDetail> {
     );
   }
 
-  /// Returns the user's city, or '' if location is off, denied or unavailable.
-  Future<String> _getCity() async {
-    try {
-      final location = Location();
-
-      var serviceEnabled = await location.serviceEnabled();
-      if (!serviceEnabled) {
-        serviceEnabled = await location.requestService();
-        if (!serviceEnabled) return '';
-      }
-
-      var permission = await location.hasPermission();
-      if (permission == PermissionStatus.denied) {
-        permission = await location.requestPermission();
-      }
-      if (permission != PermissionStatus.granted &&
-          permission != PermissionStatus.grantedLimited) {
-        return '';
-      }
-
-      final here =
-          await location.getLocation().timeout(const Duration(seconds: 10));
-      if (here.latitude == null || here.longitude == null) return '';
-
-      final places = await geo.Geocoding()
-          .placemarkFromCoordinates(here.latitude!, here.longitude!);
-      return places.isEmpty ? '' : (places.first.locality ?? '');
-    } catch (e) {
-      debugPrint('Could not get location: $e');
-      return '';
-    }
-  }
-
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
@@ -83,7 +49,7 @@ class _SignUpDetailState extends State<SignUpDetail> {
 
     try {
       _data['Gender'] = _gender;
-      _data['Address'] = await _getCity();
+      _data['Address'] = await getCity();
 
       final response = await auth.signUp(_data['email']!, _data['password']!);
       if (response['error'] != null) {

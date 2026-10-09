@@ -1,248 +1,147 @@
 import 'package:flutter/material.dart';
-import 'package:sliverbar_with_card/sliverbar_with_card.dart';
-import 'package:date_time_picker/date_time_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../provider/booking_model.dart';
-import 'package:location/location.dart';
-import 'package:geocoder/geocoder.dart';
-import 'package:flutter/services.dart';
+import '../provider/database_model.dart';
+import '../utils/location_helper.dart';
 
 class TrainerDetail extends StatefulWidget {
-  final trainer;
-  TrainerDetail(this.trainer);
+  final Trainer trainer;
+  const TrainerDetail(this.trainer, {super.key});
 
   @override
-  _TrainerDetailState createState() => _TrainerDetailState();
+  State<TrainerDetail> createState() => _TrainerDetailState();
 }
 
 class _TrainerDetailState extends State<TrainerDetail> {
-  bool favorito = false;
-  bool expandText = false;
-  String dateTime;
-  final GlobalKey<FormState> _formKey = GlobalKey();
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _expandText = false;
+  bool _isBooking = false;
 
-  Future<String> getUserLocation() async {
-    //call this async method from whereever you need
+  Trainer get trainer => widget.trainer;
 
-    LocationData myLocation;
-    String error;
-    Location location = new Location();
+  Future<void> _openBooking() async {
+    final slot = await showDialog<_BookingSlot>(
+      context: context,
+      builder: (_) => const _BookingDialog(),
+    );
+    if (slot == null || !mounted) return;
+
+    setState(() => _isBooking = true);
+    final booking = context.read<Booking>();
+    final userName = context.read<DataBase>().user?.name ?? '';
+    final messenger = ScaffoldMessenger.of(context);
+
     try {
-      myLocation = await location.getLocation();
-    } on PlatformException catch (e) {
-      if (e.code == 'PERMISSION_DENIED') {
-        error = 'please grant permission';
-        print(error);
-      }
-      if (e.code == 'PERMISSION_DENIED_NEVER_ASK') {
-        error = 'permission denied- please enable it from app settings';
-        print(error);
-      }
-      myLocation = null;
+      final city = await getCity();
+      final ok = await booking.book(
+        DateFormat('yyyy-MM-dd').format(slot.date),
+        slot.time,
+        city,
+        trainer.trainerId,
+        userName,
+      );
+      messenger.showSnackBar(SnackBar(
+        content: Text(ok
+            ? 'Booked with ${trainer.name}!'
+            : 'Booking failed. Please try again.'),
+        duration: const Duration(seconds: 2),
+      ));
+    } catch (e) {
+      debugPrint('Booking failed: $e');
+      messenger.showSnackBar(const SnackBar(
+        content: Text('Could not connect. Check your internet connection.'),
+      ));
+    } finally {
+      if (mounted) setState(() => _isBooking = false);
     }
-    final coordinates =
-        new Coordinates(myLocation.latitude, myLocation.longitude);
-    var addresses =
-        await Geocoder.local.findAddressesFromCoordinates(coordinates);
-    var first = addresses.first;
-    print(
-        ' ${first.locality}, ${first.adminArea},${first.subLocality}, ${first.subAdminArea},${first.addressLine}, ${first.featureName},${first.thoroughfare}, ${first.subThoroughfare}');
-    return first.locality.toString();
-  }
-
-  void _book(final trainerId, final name) {
-    print("book");
-    _formKey.currentState.save();
-    List<String> dateTimeSplit = dateTime.split(" ");
-    getUserLocation().then((value) {
-      Provider.of<Booking>(context, listen: false)
-          .book(dateTimeSplit[0], dateTimeSplit[1], value, trainerId, name)
-          .then((_) {
-        _scaffoldKey.currentState.showSnackBar(
-          SnackBar(
-            content: Text("Booked"),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        Navigator.of(context).pop();
-      });
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
-      body: Material(
-        child: CardSliverAppBar(
-          height: 320,
-          background: Image.asset(widget.trainer.image, fit: BoxFit.cover),
-          title: Text(widget.trainer.name,
-              style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold)),
-          titleDescription: Text(
-            "Speciality: ${widget.trainer.speciality}",
-            style: TextStyle(color: Colors.black, fontSize: 18),
-            overflow: TextOverflow.clip,
-          ),
-          card: AssetImage(widget.trainer.image),
-          backButton: true,
-          backButtonColors: [Colors.white, Colors.black],
-          body: Container(
-            alignment: Alignment.topLeft,
-            color: Colors.white,
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Container(
-                  height: expandText ? 145 : 65,
-                  margin: EdgeInsets.only(left: 30, right: 30, top: 50),
-                  child: InkWell(
-                    onTap: () {
-                      setState(() {
-                        expandText = !expandText;
-                      });
-                    },
-                    child: Text(
-                      widget.trainer.description,
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 18,
+      backgroundColor: Colors.white,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 320,
+            pinned: true,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            flexibleSpace: FlexibleSpaceBar(
+              titlePadding: const EdgeInsetsDirectional.only(
+                  start: 56, bottom: 16, end: 16),
+              title: Text(
+                trainer.name,
+                style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold),
+              ),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(trainer.image, fit: BoxFit.cover),
+                  // Fade to white at the bottom so the title stays readable.
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.center,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Colors.white],
                       ),
                     ),
                   ),
-                ),
-                SizedBox(
-                  height: 20,
-                ),
-                Container(
-                  alignment: Alignment.centerLeft,
-                  margin: EdgeInsets.only(left: 30),
-                  child: Text("Age",
+                ],
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(30, 20, 30, 40),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                Text("Speciality: ${trainer.speciality}",
+                    style: const TextStyle(color: Colors.black, fontSize: 18)),
+                const SizedBox(height: 20),
+                _description(),
+                const SizedBox(height: 20),
+                _field("Age", Text(trainer.age, style: _valueStyle)),
+                _field("Rating", _ratingBar(trainer.rating)),
+                _field(
+                    "Experience",
+                    Text(
+                        "${trainer.experience} year${trainer.experience == 1 ? '' : 's'}",
+                        style: _valueStyle)),
+                _field("Contact Number", Text(trainer.number, style: _valueStyle),
+                    divider: false),
+              ]),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(30, 8, 30, 16),
+          child: SizedBox(
+            height: 56,
+            child: ElevatedButton(
+              onPressed: _isBooking ? null : _openBooking,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1BC0C5),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30)),
+              ),
+              child: _isBooking
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2.5, color: Colors.white),
+                    )
+                  : const Text("Book a session",
                       style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Container(
-                  alignment: Alignment.centerLeft,
-                  margin: EdgeInsets.only(left: 30),
-                  child: Text(widget.trainer.age.toString(),
-                      style: TextStyle(
-                          fontWeight: FontWeight.normal, fontSize: 16)),
-                ),
-                Divider(),
-                Container(
-                  alignment: Alignment.centerLeft,
-                  margin: EdgeInsets.only(left: 30),
-                  child: Text("Rating",
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Container(
-                  margin: EdgeInsets.only(right: 240),
-                  child: ratingBar(widget.trainer.rating),
-                ),
-                Divider(),
-                Container(
-                  alignment: Alignment.centerLeft,
-                  margin: EdgeInsets.only(left: 30),
-                  child: Text("Experience",
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Container(
-                  alignment: Alignment.centerLeft,
-                  margin: EdgeInsets.only(left: 30),
-                  child: Text(widget.trainer.experience.toString(),
-                      style: TextStyle(
-                          fontWeight: FontWeight.normal, fontSize: 16)),
-                ),
-                Divider(),
-                Container(
-                  alignment: Alignment.centerLeft,
-                  margin: EdgeInsets.only(left: 30),
-                  child: Text("Contact Number",
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Container(
-                  alignment: Alignment.centerLeft,
-                  margin: EdgeInsets.only(left: 30),
-                  child: Text(widget.trainer.number,
-                      style: TextStyle(
-                          fontWeight: FontWeight.normal, fontSize: 16)),
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Container(
-                  margin: const EdgeInsets.only(top: 100),
-                  alignment: Alignment.bottomCenter,
-                  child: RaisedButton(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 60, vertical: 20),
-                    onPressed: () => showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return Dialog(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20.0),
-                          ),
-                          child: Form(
-                            key: _formKey,
-                            child: Container(
-                              height: 200,
-                              child: Padding(
-                                padding: const EdgeInsets.all(12.0),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    buildDateTimePicker(),
-                                    SizedBox(
-                                      width: 320.0,
-                                      child: RaisedButton(
-                                        onPressed: () => _book(
-                                            widget.trainer.id,
-                                            widget.trainer.name),
-                                        child: Text(
-                                          "Book",
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                        color: const Color(0xFF1BC0C5),
-                                      ),
-                                    )
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    child: Text("Book"),
-                    // shape: RoundedRectangleBorder(
-                    //   borderRadius: BorderRadius.circular(10),
-                    // ),
-                  ),
-                )
-              ],
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
             ),
           ),
         ),
@@ -250,47 +149,168 @@ class _TrainerDetailState extends State<TrainerDetail> {
     );
   }
 
-  Widget ratingBar(int rating) {
-    List<Widget> stars = [];
-    for (int i = 0; i < 5; i++) {
-      if (i <= rating)
-        stars.add(Icon(
-          Icons.star,
-          color: Colors.orange[700],
-        ));
-      else
-        stars.add(Icon(Icons.star_border));
-    }
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: stars,
+  static const _labelStyle =
+      TextStyle(fontWeight: FontWeight.bold, fontSize: 20);
+  static const _valueStyle = TextStyle(fontSize: 16);
+
+  Widget _description() {
+    return InkWell(
+      onTap: () => setState(() => _expandText = !_expandText),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            trainer.description,
+            maxLines: _expandText ? null : 3,
+            overflow: _expandText ? null : TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.black, fontSize: 18),
+          ),
+          if (trainer.description.length > 120)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(_expandText ? "Show less" : "Read more",
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w600)),
+            ),
+        ],
+      ),
     );
   }
 
-  Widget buildDateTimePicker() {
-    return DateTimePicker(
-      type: DateTimePickerType.dateTimeSeparate,
-      dateMask: 'd MMM, yyyy',
-      initialValue: DateTime.now().toString(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      icon: Icon(Icons.event),
-      dateLabelText: 'Date',
-      timeLabelText: "Hour",
-      selectableDayPredicate: (date) {
-        // Disable weekend days to select from the calendar
-        if (date.weekday == 7) {
-          return false;
-        }
+  Widget _field(String label, Widget value, {bool divider = true}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: _labelStyle),
+        const SizedBox(height: 10),
+        value,
+        if (divider) const Divider(height: 30),
+      ],
+    );
+  }
 
-        return true;
-      },
-      onChanged: (val) => print(val),
-      validator: (val) {
-        print(val);
-        return null;
-      },
-      onSaved: (val) => print(val),
+  Widget _ratingBar(int rating) {
+    return Row(
+      children: [
+        for (int i = 0; i < 5; i++)
+          Icon(i < rating ? Icons.star : Icons.star_border,
+              color: Colors.orange.shade700),
+      ],
+    );
+  }
+}
+
+// ---------- "Pick a date and time" dialog ----------
+
+class _BookingSlot {
+  final DateTime date;
+  final TimeOfDay time;
+  const _BookingSlot(this.date, this.time);
+}
+
+class _BookingDialog extends StatefulWidget {
+  const _BookingDialog();
+
+  @override
+  State<_BookingDialog> createState() => _BookingDialogState();
+}
+
+class _BookingDialogState extends State<_BookingDialog> {
+  DateTime? _date;
+  TimeOfDay? _time;
+  String? _error;
+
+  bool _notSunday(DateTime d) => d.weekday != DateTime.sunday;
+
+  DateTime _firstSelectableDay() {
+    var day = DateUtils.dateOnly(DateTime.now());
+    if (!_notSunday(day)) day = day.add(const Duration(days: 1));
+    return day;
+  }
+
+  Future<void> _pickDate() async {
+    final first = _firstSelectableDay();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date ?? first,
+      firstDate: first,
+      lastDate: DateTime(2100),
+      selectableDayPredicate: _notSunday,
+    );
+    if (picked != null) setState(() => _date = picked);
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _time ?? TimeOfDay.now(),
+    );
+    if (picked != null) setState(() => _time = picked);
+  }
+
+  void _submit() {
+    if (_date == null || _time == null) {
+      setState(() => _error = 'Pick a date and a time');
+      return;
+    }
+    Navigator.of(context).pop(_BookingSlot(_date!, _time!));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text("Choose a time",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _pickDate,
+                    icon: const Icon(Icons.event),
+                    label: Text(_date == null
+                        ? 'Date'
+                        : DateFormat('d MMM, yyyy').format(_date!)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _pickTime,
+                    icon: const Icon(Icons.access_time),
+                    label:
+                        Text(_time == null ? 'Time' : _time!.format(context)),
+                  ),
+                ),
+              ],
+            ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(_error!,
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error)),
+              ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: _submit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1BC0C5),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text("Book"),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
