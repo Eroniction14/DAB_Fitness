@@ -13,8 +13,8 @@ class VideoPlayerApp extends StatefulWidget {
 }
 
 class _VideoPlayerAppState extends State<VideoPlayerApp> {
-  VideoPlayerController _controller;
-  Future<void> _initializeVideoPlayerFuture;
+  late VideoPlayerController _controller;
+  late Future<void> _initializeVideoPlayerFuture;
 
   @override
   void initState() {

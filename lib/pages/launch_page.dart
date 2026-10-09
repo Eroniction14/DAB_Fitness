@@ -8,7 +8,7 @@ class LaunchPage extends StatefulWidget {
 }
 
 class _LaunchPageState extends State<LaunchPage> {
-  PageController _pageController;
+  late PageController _pageController;
   int currentIndex = 0;
   int currentImage = 0;
 
@@ -126,17 +126,19 @@ class _LaunchPageState extends State<LaunchPage> {
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           if (currentIndex == 3)
-            RaisedButton(
+            ElevatedButton(
               onPressed: () => Navigator.of(context)
                   .pushReplacementNamed(WelcomePage.routeName),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.tealAccent.shade400,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
               child: Text(
                 "Get Started !!!",
                 style: Theme.of(context).textTheme.labelLarge,
               ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              color: Colors.tealAccent[400],
             ),
           reverse
               ? Column(
