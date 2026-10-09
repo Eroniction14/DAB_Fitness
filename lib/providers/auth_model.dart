@@ -77,13 +77,15 @@ String authErrorMessage(Map<String, dynamic> response) {
       code.startsWith('EMAIL_NOT_FOUND')) {
     return 'Incorrect email or password.';
   }
-  if (code.startsWith('INVALID_EMAIL')) return 'That email address is not valid.';
+  if (code.startsWith('INVALID_EMAIL'))
+    return 'That email address is not valid.';
   if (code.startsWith('WEAK_PASSWORD')) {
     return 'Password must be at least 6 characters.';
   }
   if (code.startsWith('TOO_MANY_ATTEMPTS')) {
     return 'Too many attempts. Please try again later.';
   }
-  if (code.startsWith('USER_DISABLED')) return 'This account has been disabled.';
+  if (code.startsWith('USER_DISABLED'))
+    return 'This account has been disabled.';
   return 'Something went wrong ($code).';
 }

@@ -56,8 +56,7 @@ class _CallPageState extends State<CallPage> {
       ));
 
       _engine.registerEventHandler(RtcEngineEventHandler(
-        onError: (ErrorCodeType err, String msg) =>
-            _addLog('Error: $err $msg'),
+        onError: (ErrorCodeType err, String msg) => _addLog('Error: $err $msg'),
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
           _addLog('Joined ${connection.channelId} as ${connection.localUid}');
           if (mounted) setState(() => _joined = true);
@@ -86,7 +85,8 @@ class _CallPageState extends State<CallPage> {
 
       await _engine.setClientRole(role: widget.role);
       await _engine.enableVideo();
-      await _engine.setVideoEncoderConfiguration(const VideoEncoderConfiguration(
+      await _engine
+          .setVideoEncoderConfiguration(const VideoEncoderConfiguration(
         dimensions: VideoDimensions(width: 1280, height: 720),
         frameRate: 15,
       ));
@@ -280,8 +280,8 @@ class _CallPageState extends State<CallPage> {
                     borderRadius: BorderRadius.circular(5),
                   ),
                   child: Text(text,
-                      style:
-                          const TextStyle(color: Colors.blueGrey, fontSize: 12)),
+                      style: const TextStyle(
+                          color: Colors.blueGrey, fontSize: 12)),
                 ),
               ),
             );

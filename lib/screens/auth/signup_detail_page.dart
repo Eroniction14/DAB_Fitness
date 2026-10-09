@@ -113,7 +113,9 @@ class _SignUpDetailState extends State<SignUpDetail> {
                 FadeAnimation(
                   1.2,
                   Text(
-                    _isTrainer ? "Tell us about yourself" : "Enter your details",
+                    _isTrainer
+                        ? "Tell us about yourself"
+                        : "Enter your details",
                     style: TextStyle(fontSize: 15, color: Colors.grey.shade700),
                   ),
                 ),
@@ -178,8 +180,7 @@ class _SignUpDetailState extends State<SignUpDetail> {
         color: Colors.greenAccent,
         disabledColor: Colors.greenAccent,
         elevation: 0,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
         child: _isLoading
             ? const SizedBox(
                 width: 24,
@@ -194,8 +195,7 @@ class _SignUpDetailState extends State<SignUpDetail> {
 
   /// [label] is also the key the value is saved under (Name, Age, Number...),
   /// which is what registerUserData / registerTrainerData read.
-  Widget _input(String label,
-      {TextInputType? keyboardType, int maxLines = 1}) {
+  Widget _input(String label, {TextInputType? keyboardType, int maxLines = 1}) {
     final border =
         OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade400));
     return Column(
@@ -218,8 +218,9 @@ class _SignUpDetailState extends State<SignUpDetail> {
             enabledBorder: border,
             border: border,
           ),
-          validator: (value) =>
-              (value == null || value.trim().isEmpty) ? '$label is empty!' : null,
+          validator: (value) => (value == null || value.trim().isEmpty)
+              ? '$label is empty!'
+              : null,
           onSaved: (value) => _data[label] = value?.trim() ?? '',
         ),
         const SizedBox(height: 30),

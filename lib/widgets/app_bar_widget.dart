@@ -7,10 +7,10 @@ class MyAppbar extends StatelessWidget {
   final String content;
   final String title;
   final bool ishome;
+
   /// The signed-in `UserProfile` or `Trainer`; null hides the profile button.
   final dynamic user;
-  const MyAppbar(this.content, this.title, this.ishome, this.user,
-      {super.key});
+  const MyAppbar(this.content, this.title, this.ishome, this.user, {super.key});
   @override
   Widget build(BuildContext context) {
     return SliverAppBar(

@@ -113,7 +113,8 @@ class _TrainerDetailState extends State<TrainerDetail> {
                     Text(
                         "${trainer.experience} year${trainer.experience == 1 ? '' : 's'}",
                         style: _valueStyle)),
-                _field("Contact Number", Text(trainer.number, style: _valueStyle),
+                _field(
+                    "Contact Number", Text(trainer.number, style: _valueStyle),
                     divider: false),
               ]),
             ),

@@ -71,8 +71,7 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
 
   Future<void> _onJoin(String channelName) async {
     if (channelName.isEmpty) return;
-    final statuses =
-        await [Permission.camera, Permission.microphone].request();
+    final statuses = await [Permission.camera, Permission.microphone].request();
     if (!mounted) return;
     if (statuses.values.any((s) => !s.isGranted)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -198,9 +197,11 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(_sheetOpen ? Icons.arrow_drop_down : Icons.arrow_drop_up),
+                  Icon(
+                      _sheetOpen ? Icons.arrow_drop_down : Icons.arrow_drop_up),
                   const Text("My Classes"),
-                  Icon(_sheetOpen ? Icons.arrow_drop_down : Icons.arrow_drop_up),
+                  Icon(
+                      _sheetOpen ? Icons.arrow_drop_down : Icons.arrow_drop_up),
                 ],
               ),
             ),
@@ -370,8 +371,8 @@ class _LiveClassDialogState extends State<_LiveClassDialog> {
                     child: OutlinedButton.icon(
                       onPressed: _pickTime,
                       icon: const Icon(Icons.access_time),
-                      label: Text(
-                          _time == null ? 'Time' : _time!.format(context)),
+                      label:
+                          Text(_time == null ? 'Time' : _time!.format(context)),
                     ),
                   ),
                 ],

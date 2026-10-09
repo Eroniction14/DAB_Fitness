@@ -43,7 +43,6 @@ const List<WorkoutCategory> workoutCategoryData = [
   ),
 ];
 
-
 // assets/butterfly_stretch.mp4
 // assets/downward_dog.mp4
 // assets/plank2.mp4

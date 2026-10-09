@@ -55,7 +55,8 @@ class _LoginPageState extends State<LoginPage> {
       } else if (role == 2) {
         navigator.pushReplacementNamed(TrainerHomePage.routeName);
       } else if (mounted) {
-        _showError('No profile found for this account. Please finish signing up.');
+        _showError(
+            'No profile found for this account. Please finish signing up.');
       }
     } catch (e) {
       debugPrint('Login failed: $e');
@@ -169,8 +170,7 @@ class _LoginPageState extends State<LoginPage> {
         color: Colors.greenAccent,
         disabledColor: Colors.greenAccent,
         elevation: 0,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
         child: _isLoading
             ? const SizedBox(
                 width: 24,

@@ -89,10 +89,12 @@ class _HomePage extends State<HomePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(_sheetOpen ? Icons.arrow_drop_down : Icons.arrow_drop_up),
+                  Icon(
+                      _sheetOpen ? Icons.arrow_drop_down : Icons.arrow_drop_up),
                   Text("Sessions",
                       style: Theme.of(context).textTheme.titleMedium),
-                  Icon(_sheetOpen ? Icons.arrow_drop_down : Icons.arrow_drop_up),
+                  Icon(
+                      _sheetOpen ? Icons.arrow_drop_down : Icons.arrow_drop_up),
                 ],
               ),
             ),
@@ -144,8 +146,8 @@ class _HomePage extends State<HomePage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(false),
-                  child: Text('No',
-                      style: Theme.of(context).textTheme.labelLarge),
+                  child:
+                      Text('No', style: Theme.of(context).textTheme.labelLarge),
                 ),
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(true),
@@ -155,7 +157,8 @@ class _HomePage extends State<HomePage> {
               ],
             ),
           ),
-          onDismissed: (direction) => setState(() => appoinments.removeAt(index)),
+          onDismissed: (direction) =>
+              setState(() => appoinments.removeAt(index)),
           child: Card(
             margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
             child: Padding(
@@ -299,8 +302,7 @@ class _HomePage extends State<HomePage> {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 20),
-          child:
-              Text(title, style: Theme.of(context).textTheme.headlineMedium),
+          child: Text(title, style: Theme.of(context).textTheme.headlineMedium),
         ),
         Container(
           height: 500,
