@@ -3,7 +3,6 @@ import 'package:agora_flutter_quickstart/pages/login_page.dart';
 import '../provider/auth_model.dart';
 import 'package:agora_flutter_quickstart/provider/booking_model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_icons/flutter_icons.dart';
 import 'package:provider/provider.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -38,7 +37,7 @@ class ProfilePage extends StatelessWidget {
             ),
           ),
           ListTile(
-            leading: Icon(FlutterIcons.notebook_mco),
+            leading: const Icon(Icons.event_note),
             title: Text("My Appointments"),
             onTap: () => showDialog(
               context: context,
@@ -67,7 +66,7 @@ class ProfilePage extends StatelessWidget {
                                 ),
                                 direction: DismissDirection.endToStart,
                                 confirmDismiss: (direction) {
-                                  return showDialog(
+                                  return showDialog<bool>(
                                     context: context,
                                     builder: (ctx) => AlertDialog(
                                       title: Text(
@@ -83,7 +82,7 @@ class ProfilePage extends StatelessWidget {
                                             .bodyMedium,
                                       ),
                                       actions: <Widget>[
-                                        FlatButton(
+                                        TextButton(
                                           child: Text(
                                             'No',
                                             style: Theme.of(context)
@@ -94,7 +93,7 @@ class ProfilePage extends StatelessWidget {
                                             Navigator.of(ctx).pop(false);
                                           },
                                         ),
-                                        FlatButton(
+                                        TextButton(
                                           child: Text(
                                             'Yes',
                                             style: Theme.of(context)
@@ -144,7 +143,7 @@ class ProfilePage extends StatelessWidget {
                           )
                         : Center(
                             child: Text("No Appoinments scheduled",
-                                style: Theme.of(context).textTheme.displayMedium),
+                                style: Theme.of(context).textTheme.bodyMedium),
                           ),
                   ),
                 );
