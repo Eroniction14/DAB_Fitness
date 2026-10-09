@@ -1,311 +1,263 @@
-import '../provider/database_model.dart';
-import 'package:agora_flutter_quickstart/pages/login_page.dart';
-import 'package:provider/provider.dart';
-import '../provider/auth_model.dart';
 import 'package:flutter/material.dart';
-import '../animation/FadeAnimation.dart';
-import 'package:location/location.dart';
-import 'package:geocoder/geocoder.dart';
 import 'package:flutter/services.dart';
+import 'package:geocoding/geocoding.dart' as geo;
+import 'package:location/location.dart';
+import 'package:provider/provider.dart';
+
+import '../animation/FadeAnimation.dart';
+import '../provider/auth_model.dart';
+import '../provider/database_model.dart';
+import './home_page.dart';
+import './trainerhome_page.dart';
 
 class SignUpDetail extends StatefulWidget {
+  /// 0 = User, 1 = Trainer
   final int mode;
-  final Map<String, String> _authData;
+  final Map<String, String> authData;
 
-  SignUpDetail(this.mode, this._authData);
+  const SignUpDetail(this.mode, this.authData, {super.key});
+
   @override
-  _SignUpDetailState createState() => _SignUpDetailState();
+  State<SignUpDetail> createState() => _SignUpDetailState();
 }
 
 class _SignUpDetailState extends State<SignUpDetail> {
-  int _selectedRadioButton = 0;
-  final GlobalKey<FormState> _formKey = GlobalKey();
-  //var _isLoading = false;
+  final _formKey = GlobalKey<FormState>();
+  late final Map<String, String> _data = Map.of(widget.authData);
+  String _gender = 'male';
+  bool _isLoading = false;
 
-  void _submit() {
-    if (!_formKey.currentState.validate()) {
-      // Invalid!
-      return;
-    }
-    _formKey.currentState.save();
-    // setState(() {
-    //   _isLoading = true;
-    // });
-    getUserLocation();
-    if (widget.mode == 0) {
-      widget._authData["Gender"] =
-          _selectedRadioButton == 0 ? "male" : "female";
-      Provider.of<Auth>(context, listen: false)
-          .signUp(widget._authData["email"], widget._authData["password"])
-          .then((value) {
-        print("sign up");
-        print(value['idToken']);
-        Provider.of<DataBase>(context, listen: false)
-            .registerUserData(
-                value['idToken'], value['localId'], widget._authData)
-            .then((value) => Navigator.of(context)
-                .pushReplacementNamed(LoginPage.routeName));
-      });
-    } else {
-      Provider.of<Auth>(context, listen: false)
-          .signUp(widget._authData["email"], widget._authData["password"])
-          .then((value) {
-        Provider.of<DataBase>(context, listen: false)
-            .registerTrainerData(
-                value['idToken'], value['localId'], widget._authData)
-            .then((value) => Navigator.of(context)
-                .pushReplacementNamed(LoginPage.routeName));
-      });
-    }
+  bool get _isTrainer => widget.mode == 1;
 
-    // setState(() {
-    //   _isLoading = false;
-    // });
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
   }
 
-  getUserLocation() async {
-    //call this async method from whereever you need
-
-    LocationData myLocation;
-    String error;
-    Location location = new Location();
+  /// Returns the user's city, or '' if location is off, denied or unavailable.
+  Future<String> _getCity() async {
     try {
-      myLocation = await location.getLocation();
-    } on PlatformException catch (e) {
-      if (e.code == 'PERMISSION_DENIED') {
-        error = 'please grant permission';
-        print(error);
+      final location = Location();
+
+      var serviceEnabled = await location.serviceEnabled();
+      if (!serviceEnabled) {
+        serviceEnabled = await location.requestService();
+        if (!serviceEnabled) return '';
       }
-      if (e.code == 'PERMISSION_DENIED_NEVER_ASK') {
-        error = 'permission denied- please enable it from app settings';
-        print(error);
+
+      var permission = await location.hasPermission();
+      if (permission == PermissionStatus.denied) {
+        permission = await location.requestPermission();
       }
-      myLocation = null;
+      if (permission != PermissionStatus.granted &&
+          permission != PermissionStatus.grantedLimited) {
+        return '';
+      }
+
+      final here =
+          await location.getLocation().timeout(const Duration(seconds: 10));
+      if (here.latitude == null || here.longitude == null) return '';
+
+      final places =
+          await geo.placemarkFromCoordinates(here.latitude!, here.longitude!);
+      return places.isEmpty ? '' : (places.first.locality ?? '');
+    } catch (e) {
+      debugPrint('Could not get location: $e');
+      return '';
     }
-    final coordinates =
-        new Coordinates(myLocation.latitude, myLocation.longitude);
-    var addresses =
-        await Geocoder.local.findAddressesFromCoordinates(coordinates);
-    var first = addresses.first;
-    print(
-        ' ${first.locality}, ${first.adminArea},${first.subLocality}, ${first.subAdminArea},${first.addressLine}, ${first.featureName},${first.thoroughfare}, ${first.subThoroughfare}');
-    widget._authData['Address'] = first.locality.toString();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    _formKey.currentState!.save();
+    FocusScope.of(context).unfocus();
+    setState(() => _isLoading = true);
+
+    final auth = context.read<Auth>();
+    final database = context.read<DataBase>();
+    final navigator = Navigator.of(context);
+
+    try {
+      _data['Gender'] = _gender;
+      _data['Address'] = await _getCity();
+
+      final response = await auth.signUp(_data['email']!, _data['password']!);
+      if (response['error'] != null) {
+        if (mounted) _showError(authErrorMessage(response));
+        return;
+      }
+
+      final saved = _isTrainer
+          ? await database.registerTrainerData(auth.token, auth.userId, _data)
+          : await database.registerUserData(auth.token, auth.userId, _data);
+      if (!saved) {
+        if (mounted) {
+          _showError(
+              'Account created, but saving your profile failed. Try logging in.');
+        }
+        return;
+      }
+
+      final role = await database.loadData(auth.token, auth.userId);
+      navigator.pushNamedAndRemoveUntil(
+        role == 2 ? TrainerHome.routeName : HomePage.routeName,
+        (_) => false,
+      );
+    } catch (e) {
+      debugPrint('Sign up failed: $e');
+      if (mounted) {
+        _showError('Could not connect. Check your internet connection.');
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true,
       backgroundColor: Colors.white,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
         leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: Icon(
-            Icons.arrow_back_ios,
-            size: 20,
-            color: Colors.black,
-          ),
-        ), systemOverlayStyle: SystemUiOverlayStyle.dark,
-      ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: widget.mode == 0 ? userDetails() : trainerDetails(),
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back_ios, size: 20, color: Colors.black),
         ),
       ),
-    );
-  }
-
-  Widget trainerDetails() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 40, vertical: 10),
-      width: double.infinity,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: <Widget>[
-          Column(
-            children: <Widget>[
-              FadeAnimation(
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
+            child: Column(
+              children: [
+                const FadeAnimation(
                   1,
-                  Text(
-                    "Sign up",
-                    style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-                  )),
-              SizedBox(
-                height: 20,
-              ),
-              FadeAnimation(
+                  Text("Sign up",
+                      style:
+                          TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 20),
+                FadeAnimation(
                   1.2,
                   Text(
-                    "Enter the Details",
-                    style: TextStyle(fontSize: 15, color: Colors.grey[700]),
-                  )),
-            ],
-          ),
-          Column(
-            children: <Widget>[
-              FadeAnimation(1.2, makeInput(label: "Name")),
-              FadeAnimation(1.3, makeInput(label: "Age")),
-              FadeAnimation(1.3, makeInput(label: "Gender")),
-              FadeAnimation(1.4, makeInput(label: "Description")),
-              FadeAnimation(1.5, makeInput(label: "Speciality")),
-              FadeAnimation(1.6, makeInput(label: "Number")),
-            ],
-          ),
-          FadeAnimation(
-            1.5,
-            Container(
-              padding: EdgeInsets.only(top: 3, left: 3),
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(50),
-                  border: Border(
-                    bottom: BorderSide(color: Colors.black),
-                    top: BorderSide(color: Colors.black),
-                    left: BorderSide(color: Colors.black),
-                    right: BorderSide(color: Colors.black),
-                  )),
-              child: MaterialButton(
-                minWidth: double.infinity,
-                height: 60,
-                onPressed: _submit,
-                color: Colors.greenAccent,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(50)),
-                child: Text(
-                  "Sign up",
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
+                    _isTrainer ? "Tell us about yourself" : "Enter your details",
+                    style: TextStyle(fontSize: 15, color: Colors.grey.shade700),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 30),
+                FadeAnimation(1.2, _input("Name")),
+                if (_isTrainer) ...[
+                  FadeAnimation(
+                      1.3, _input("Age", keyboardType: TextInputType.number)),
+                  FadeAnimation(1.4, _input("Description", maxLines: 3)),
+                  FadeAnimation(1.5, _input("Speciality")),
+                ],
+                FadeAnimation(
+                    1.5, _input("Number", keyboardType: TextInputType.phone)),
+                FadeAnimation(1.6, _genderSelector()),
+                const SizedBox(height: 40),
+                FadeAnimation(1.6, _signUpButton()),
+                const SizedBox(height: 20),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget userDetails() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 40),
-      width: double.infinity,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: <Widget>[
-          Column(
-            children: <Widget>[
-              FadeAnimation(
-                  1,
-                  Text(
-                    "Sign up",
-                    style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-                  )),
-              SizedBox(
-                height: 20,
-              ),
-              FadeAnimation(1.2, makeInput(label: "Name")),
-              FadeAnimation(1.2, makeInput(label: "Number")),
-              FadeAnimation(
-                1.2,
-                Text(
-                  "Choose Your Preferences",
-                  style: TextStyle(fontSize: 15, color: Colors.grey[700]),
-                ),
-              ),
-            ],
-          ),
-          Column(
-            children: <Widget>[
-              FadeAnimation(1.2, makeRadioButton("Male", 0)),
-              FadeAnimation(1.2, makeRadioButton("Female", 1)),
-            ],
-          ),
-          FadeAnimation(
-            1.5,
-            Container(
-              padding: EdgeInsets.only(top: 3, left: 3),
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(50),
-                  border: Border(
-                    bottom: BorderSide(color: Colors.black),
-                    top: BorderSide(color: Colors.black),
-                    left: BorderSide(color: Colors.black),
-                    right: BorderSide(color: Colors.black),
-                  )),
-              child: MaterialButton(
-                minWidth: double.infinity,
-                height: 60,
-                onPressed: _submit,
-                color: Colors.greenAccent,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(50)),
-                child: Text(
-                  "Sign up",
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget makeInput({label, obscureText = false}) {
+  Widget _genderSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          label,
-          style: TextStyle(
-              fontSize: 15, fontWeight: FontWeight.w400, color: Colors.black87),
-        ),
+      children: [
+        const Text("Gender",
+            style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w400,
+                color: Colors.black87)),
+        const SizedBox(height: 8),
         SizedBox(
-          height: 5,
-        ),
-        TextFormField(
-          obscureText: obscureText,
-          decoration: InputDecoration(
-            contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-            enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey[400])),
-            border: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey[400])),
+          width: double.infinity,
+          child: SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'male', label: Text("Male")),
+              ButtonSegment(value: 'female', label: Text("Female")),
+            ],
+            selected: {_gender},
+            onSelectionChanged: (s) => setState(() => _gender = s.first),
           ),
-          onSaved: (value) {
-            widget._authData[label] = value;
-          },
-          validator: (value) {
-            if (value.isEmpty) {
-              return '$label is empty!';
-            }
-            return null;
-          },
-        ),
-        SizedBox(
-          height: 30,
         ),
       ],
     );
   }
 
-  void handleRadioButton() {}
-  Widget makeRadioButton(String label, int value) {
-    return ListTile(
-      title: Text(label),
-      leading: Radio(
-        value: value,
-        groupValue: _selectedRadioButton,
-        onChanged: (value) {
-          setState(() {
-            _selectedRadioButton = value;
-          });
-        },
+  Widget _signUpButton() {
+    return Container(
+      padding: const EdgeInsets.only(top: 3, left: 3),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(50),
+        border: Border.all(color: Colors.black),
       ),
+      child: MaterialButton(
+        minWidth: double.infinity,
+        height: 60,
+        onPressed: _isLoading ? null : _submit,
+        color: Colors.greenAccent,
+        disabledColor: Colors.greenAccent,
+        elevation: 0,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+        child: _isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              )
+            : const Text("Sign up",
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
+      ),
+    );
+  }
+
+  /// [label] is also the key the value is saved under (Name, Age, Number...),
+  /// which is what registerUserData / registerTrainerData read.
+  Widget _input(String label,
+      {TextInputType? keyboardType, int maxLines = 1}) {
+    final border =
+        OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade400));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w400,
+                color: Colors.black87)),
+        const SizedBox(height: 5),
+        TextFormField(
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          textInputAction:
+              maxLines > 1 ? TextInputAction.newline : TextInputAction.next,
+          decoration: InputDecoration(
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+            enabledBorder: border,
+            border: border,
+          ),
+          validator: (value) =>
+              (value == null || value.trim().isEmpty) ? '$label is empty!' : null,
+          onSaved: (value) => _data[label] = value?.trim() ?? '',
+        ),
+        const SizedBox(height: 30),
+      ],
     );
   }
 }
