@@ -10,6 +10,7 @@ import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/screens/live_class/call_page.dart';
 import 'package:dab_fitness/widgets/app_bar_widget.dart';
+import 'package:dab_fitness/widgets/booking_tile.dart';
 
 class TrainerHomePage extends StatefulWidget {
   static const routeName = '/trainerHome';
@@ -114,7 +115,8 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
         margin: const EdgeInsets.symmetric(horizontal: 10),
         child: CustomScrollView(
           slivers: [
-            MyAppbar("Hello, ${trainer.name}", "Home", false, trainer),
+            MyAppbar("Hello, ${trainer.name}", "Home", false, trainer,
+                showLogout: true),
             SliverFillRemaining(
               child: _appointmentsList(booking.getAppoinments),
             ),
@@ -165,7 +167,7 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
                   ),
-                  onPressed: () {}, // TODO: cancel booking in Firebase
+                  onPressed: () => confirmAndCancelBooking(context, slot),
                   child: const Text("Cancel", style: bold20),
                 ),
               ],

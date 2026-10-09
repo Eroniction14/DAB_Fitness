@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 import 'package:dab_fitness/models/booking.dart';
@@ -45,26 +46,62 @@ class DatabaseService {
 
   // ---------- Bookings ----------
 
-  /// Saves the booking under both the user and the trainer, atomically,
-  /// with the same key. Returns the key.
-  Future<String> addBooking(Booking booking) async {
+  /// Saves the booking under both the user and the trainer with the same
+  /// key, plus a lock on the trainer's time slot, in one atomic update.
+  /// The rules only let a lock be created if it doesn't exist yet, so a
+  /// second booking of the same slot is rejected as a whole.
+  /// Returns the booking with its new key.
+  Future<Booking> addBooking(Booking booking) async {
     final key = _db.ref('appointments/${booking.userId}').push().key!;
-    await _db.ref().update({
-      'appointments/${booking.userId}/$key': booking.toJson(),
-      'trainerAppointments/${booking.trainerId}/$key': booking.toJson(),
-    });
-    return key;
+    final saved = booking.copyWith(key: key);
+    try {
+      await _db.ref().update({
+        'appointments/${saved.userId}/$key': saved.toJson(),
+        'trainerAppointments/${saved.trainerId}/$key': saved.toJson(),
+        'trainerSlots/${saved.trainerId}/${saved.slotKey}': {
+          'userId': saved.userId,
+          'bookingKey': key,
+        },
+      });
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') {
+        throw const BookingException(
+            'That time is already booked. Please pick another.');
+      }
+      rethrow;
+    }
+    return saved;
+  }
+
+  /// Removes both copies of the booking and frees its time slot.
+  Future<void> cancelBooking(Booking booking) async {
+    final copies = {
+      'appointments/${booking.userId}/${booking.key}': null,
+      'trainerAppointments/${booking.trainerId}/${booking.key}': null,
+    };
+    try {
+      await _db.ref().update({
+        ...copies,
+        'trainerSlots/${booking.trainerId}/${booking.slotKey}': null,
+      });
+    } on FirebaseException catch (e) {
+      // Bookings made before slot locks existed may share their slot with a
+      // newer booking whose lock isn't ours to delete. Remove just the copies.
+      if (e.code != 'permission-denied') rethrow;
+      await _db.ref().update(copies);
+    }
   }
 
   Future<List<Booking>> getUserBookings(String userId) async =>
-      jsonChildren(await _read('appointments/$userId'))
-          .map(Booking.fromJson)
-          .toList();
+      _bookings(await _read('appointments/$userId'));
 
   Future<List<Booking>> getTrainerBookings(String trainerId) async =>
-      jsonChildren(await _read('trainerAppointments/$trainerId'))
-          .map(Booking.fromJson)
-          .toList();
+      _bookings(await _read('trainerAppointments/$trainerId'));
+
+  List<Booking> _bookings(Object? node) => [
+        for (final entry in jsonChildEntries(node))
+          Booking.fromJson(entry.key, entry.value),
+      ];
 
   // ---------- Live classes ----------
 

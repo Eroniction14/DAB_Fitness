@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:dab_fitness/screens/auth/logout.dart';
 import 'package:dab_fitness/screens/profile/profile_page.dart';
 import 'package:dab_fitness/screens/training/training_page.dart';
 
@@ -10,7 +11,12 @@ class MyAppbar extends StatelessWidget {
 
   /// The signed-in `UserProfile` or `Trainer`; null hides the profile button.
   final dynamic user;
-  const MyAppbar(this.content, this.title, this.ishome, this.user, {super.key});
+
+  /// Adds a log-out button next to the profile button.
+  final bool showLogout;
+
+  const MyAppbar(this.content, this.title, this.ishome, this.user,
+      {this.showLogout = false, super.key});
   @override
   Widget build(BuildContext context) {
     return SliverAppBar(
@@ -26,7 +32,13 @@ class MyAppbar extends StatelessWidget {
                 builder: (context) => ProfilePage(user),
               ),
             ),
-          )
+          ),
+        if (showLogout)
+          IconButton(
+            tooltip: 'Log out',
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: () => confirmLogOut(context),
+          ),
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(

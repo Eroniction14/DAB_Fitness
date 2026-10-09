@@ -20,6 +20,16 @@ Map<String, dynamic>? asJsonMap(Object? value) {
   return null;
 }
 
+/// The child maps of a database node, keyed by their database key.
+/// Non-map children are skipped.
+Iterable<MapEntry<String, Map<String, dynamic>>> jsonChildEntries(
+    Object? node) sync* {
+  for (final entry in (asJsonMap(node) ?? const {}).entries) {
+    final child = asJsonMap(entry.value);
+    if (child != null) yield MapEntry(entry.key, child);
+  }
+}
+
 /// The child maps of a database node, e.g. every booking under
 /// `appointments/<uid>`. Non-map children are skipped.
 Iterable<Map<String, dynamic>> jsonChildren(Object? node) =>

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import 'package:dab_fitness/models/booking.dart';
 import 'package:dab_fitness/models/trainer.dart';
 import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
@@ -54,6 +55,8 @@ class _TrainerListPageState extends State<TrainerListPage> {
             : 'Booking failed. Please try again.'),
         duration: const Duration(seconds: 2),
       ));
+    } on BookingException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       debugPrint('Booking failed: $e');
       messenger.showSnackBar(const SnackBar(

@@ -4,6 +4,8 @@ import 'package:dab_fitness/models/json_helpers.dart';
 /// stored at `appointments/{userId}/{key}` and
 /// `trainerAppointments/{trainerId}/{key}`.
 class Booking {
+  /// Database key, shared by both copies. Empty until the booking is saved.
+  final String key;
   final String date;
   final String time;
   final String address;
@@ -16,6 +18,7 @@ class Booking {
   final String user;
 
   Booking({
+    this.key = '',
     required this.date,
     required this.time,
     required this.address,
@@ -24,13 +27,30 @@ class Booking {
     required this.user,
   });
 
-  factory Booking.fromJson(Map<String, dynamic> d) => Booking(
+  factory Booking.fromJson(String key, Map<String, dynamic> d) => Booking(
+        key: key,
         date: jsonString(d['Date']),
         time: jsonString(d['Time']),
         address: jsonString(d['Address']),
         trainerId: jsonString(d['TrainerId']),
         userId: jsonString(d['Id']),
         user: jsonString(d['user']),
+      );
+
+  /// Key of this booking's double-booking lock under `trainerSlots/{trainerId}`.
+  String get slotKey => '${date}_$time';
+
+  /// When the session starts, or null if the stored date/time is malformed.
+  DateTime? get startsAt => DateTime.tryParse('${date}T$time');
+
+  Booking copyWith({String? key}) => Booking(
+        key: key ?? this.key,
+        date: date,
+        time: time,
+        address: address,
+        trainerId: trainerId,
+        userId: userId,
+        user: user,
       );
 
   Map<String, dynamic> toJson() => {
@@ -41,4 +61,13 @@ class Booking {
         'user': user,
         'TrainerId': trainerId,
       };
+}
+
+/// A booking that was refused, with a message to show the user.
+class BookingException implements Exception {
+  final String message;
+  const BookingException(this.message);
+
+  @override
+  String toString() => 'BookingException: $message';
 }

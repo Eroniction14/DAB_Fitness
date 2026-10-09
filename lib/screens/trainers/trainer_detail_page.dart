@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import 'package:dab_fitness/models/booking.dart';
 import 'package:dab_fitness/models/trainer.dart';
 import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
@@ -48,6 +49,8 @@ class _TrainerDetailState extends State<TrainerDetail> {
             : 'Booking failed. Please try again.'),
         duration: const Duration(seconds: 2),
       ));
+    } on BookingException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       debugPrint('Booking failed: $e');
       messenger.showSnackBar(const SnackBar(
@@ -254,6 +257,12 @@ class BookingDialogState extends State<BookingDialog> {
   void _submit() {
     if (_date == null || _time == null) {
       setState(() => _error = 'Pick a date and a time');
+      return;
+    }
+    final start = DateTime(
+        _date!.year, _date!.month, _date!.day, _time!.hour, _time!.minute);
+    if (!start.isAfter(DateTime.now())) {
+      setState(() => _error = 'That time has already passed');
       return;
     }
     Navigator.of(context).pop(BookingSlot(_date!, _time!));

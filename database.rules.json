@@ -15,7 +15,10 @@
     "appointments": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null && auth.uid === $uid",
+        "$key": {
+          ".write": "auth != null && !newData.exists() && data.child('TrainerId').val() === auth.uid"
+        }
       }
     },
     "trainerAppointments": {
@@ -23,6 +26,15 @@
         ".read": "auth != null && auth.uid === $trainerId",
         "$key": {
           ".write": "auth != null && (auth.uid === $trainerId || ((!data.exists() || data.child('Id').val() === auth.uid) && (!newData.exists() || newData.child('Id').val() === auth.uid)))"
+        }
+      }
+    },
+    "trainerSlots": {
+      "$trainerId": {
+        ".read": "auth != null && auth.uid === $trainerId",
+        "$slot": {
+          ".write": "auth != null && ((!data.exists() && newData.child('userId').val() === auth.uid) || (!newData.exists() && (!data.exists() || data.child('userId').val() === auth.uid || auth.uid === $trainerId)))",
+          ".validate": "newData.hasChildren(['userId', 'bookingKey'])"
         }
       }
     },

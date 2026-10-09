@@ -59,6 +59,8 @@ trainers/{uid}                     { Name, Email, Age, Number, Gender, Descripti
                                      Speciality, Address, Id, rating, Image, experience, DateTime }
 appointments/{userUid}/{key}       { Date, Time, Address, Id (userUid), user (user name), TrainerId }
 trainerAppointments/{trainerUid}/{key}   same booking, same key (written in one multi-path update)
+trainerSlots/{trainerUid}/{yyyy-MM-dd_HH:mm}   { userId, bookingKey }   double-booking lock,
+                                     written/removed in the same multi-path update as the booking
 liveClass/{trainerUid}/{pushId}    { Date, Time, Id, user (trainer name), title,
                                      participants, channelName, image }
 ```
@@ -70,9 +72,13 @@ if you normalise it, migrate or read both spellings — do not silently break ex
 
 - users/$uid and appointments/$uid: read/write only by that uid.
 - trainers: readable by any signed-in user; trainers/$uid writable only by that uid.
+- appointments/$uid/$key: the booking's trainer (`TrainerId`) may also delete it (cancel).
 - trainerAppointments/$trainerId: readable only by that trainer; a child is writable by
   the trainer, or by a user only if the existing and new `Id` are that user's uid
   (users cannot create bookings in someone else's name or reassign them).
+- trainerSlots/$trainerId/$slot: readable only by that trainer; a lock can only be created
+  if it doesn't exist (this is what rejects double-booking), and deleted by the user who
+  holds it or the trainer. Bookings made before Phase 3 have no lock (not backfilled).
 - liveClass: readable by any signed-in user; liveClass/$uid writable only by that uid.
 
 ## Secrets
@@ -117,7 +123,7 @@ Ask the user before deleting anything that is not listed here.
 - Session persistence; splash routes to the correct home if already signed in.
 - Typed models with fromJson/toJson. Secrets out of source (see above).
 
-### Phase 3 — Missing functionality
+### Phase 3 — Missing functionality (3a: cancellation, double-booking, trainer logout — DONE)
 - Real booking cancellation (user and trainer; remove both copies). Booking keys must
   be kept on the model.
 - Prevent double-booking the same trainer/date/time.

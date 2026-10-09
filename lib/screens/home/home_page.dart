@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:dab_fitness/data/workout_data.dart';
-import 'package:dab_fitness/models/booking.dart';
 import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/widgets/app_bar_widget.dart';
+import 'package:dab_fitness/widgets/booking_tile.dart';
 import 'package:dab_fitness/widgets/video_player_widget.dart';
 
 class HomePage extends StatefulWidget {
@@ -21,7 +21,6 @@ class _HomePage extends State<HomePage> {
   bool _isInit = true;
   bool _isLoading = false;
   bool _sheetOpen = false;
-  List<Booking> appoinments = [];
 
   @override
   void didChangeDependencies() {
@@ -30,9 +29,7 @@ class _HomePage extends State<HomePage> {
     _isInit = false;
     _isLoading = true;
     final booking = Provider.of<BookingModel>(context, listen: false);
-    booking.loadMyAppoinments().then((_) {
-      appoinments = booking.getAppoinments;
-    }).catchError((e) {
+    booking.loadMyAppoinments().catchError((e) {
       debugPrint('Failed to load appointments: $e');
     }).whenComplete(() {
       if (mounted) setState(() => _isLoading = false);
@@ -116,63 +113,18 @@ class _HomePage extends State<HomePage> {
   }
 
   Widget _sessionsList() {
-    if (appoinments.isEmpty) {
+    final appointments = context.watch<BookingModel>().getAppoinments;
+    if (appointments.isEmpty) {
       return Center(
         child: Text("No appointments are scheduled",
             style: Theme.of(context).textTheme.displaySmall),
       );
     }
     return ListView.builder(
-      itemCount: appoinments.length,
+      itemCount: appointments.length,
       itemBuilder: (context, index) {
-        final slot = appoinments[index];
-        return Dismissible(
-          key: ValueKey('${slot.date}-${slot.time}-$index'),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            color: Theme.of(context).colorScheme.error,
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 20),
-            margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
-            child: const Icon(Icons.delete, color: Colors.white, size: 40),
-          ),
-          confirmDismiss: (direction) => showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: Text('Are you sure?',
-                  style: Theme.of(context).textTheme.bodyMedium),
-              content: Text('Do you want to cancel the appointment?',
-                  style: Theme.of(context).textTheme.bodyMedium),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(false),
-                  child:
-                      Text('No', style: Theme.of(context).textTheme.labelLarge),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(true),
-                  child: Text('Yes',
-                      style: Theme.of(context).textTheme.labelLarge),
-                ),
-              ],
-            ),
-          ),
-          onDismissed: (direction) =>
-              setState(() => appoinments.removeAt(index)),
-          child: Card(
-            margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: ListTile(
-                leading: const Icon(Icons.alarm_on),
-                title: Text(slot.date,
-                    style: Theme.of(context).textTheme.bodyMedium),
-                subtitle: Text(slot.time,
-                    style: Theme.of(context).textTheme.bodyMedium),
-              ),
-            ),
-          ),
-        );
+        final booking = appointments[index];
+        return BookingTile(booking, key: ValueKey(booking.key));
       },
     );
   }

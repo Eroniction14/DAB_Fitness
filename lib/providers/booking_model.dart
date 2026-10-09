@@ -30,6 +30,7 @@ class BookingModel with ChangeNotifier {
   List<LiveClass> get getLiveClass => liveClass;
 
   /// User books a trainer. Saved under both the user and the trainer.
+  /// Throws [BookingException] if the time has passed or is already taken.
   Future<bool> book(dynamic date, dynamic time, dynamic address,
       dynamic trainerId, dynamic name) async {
     final booking = Booking(
@@ -40,10 +41,20 @@ class BookingModel with ChangeNotifier {
       user: jsonString(name),
       trainerId: jsonString(trainerId),
     );
-    await _service.addBooking(booking);
-    bookings.add(booking);
+    final startsAt = booking.startsAt;
+    if (startsAt == null || !startsAt.isAfter(DateTime.now())) {
+      throw const BookingException('That time has already passed.');
+    }
+    bookings.add(await _service.addBooking(booking));
     notifyListeners();
     return true;
+  }
+
+  /// Cancels the booking for both the user and the trainer.
+  Future<void> cancel(Booking booking) async {
+    await _service.cancelBooking(booking);
+    bookings.removeWhere((b) => b.key == booking.key);
+    notifyListeners();
   }
 
   /// Trainer: bookings made with me.
