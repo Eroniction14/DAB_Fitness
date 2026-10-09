@@ -10,11 +10,11 @@ class Slot {
   final String user;
 
   Slot({
-    @required this.date,
-    @required this.time,
-    @required this.address,
-    @required this.trainerId,
-    @required this.user,
+    required this.date,
+    required this.time,
+    required this.address,
+    required this.trainerId,
+    required this.user,
   });
 }
 
@@ -28,13 +28,13 @@ class LiveClass {
   final String image;
 
   LiveClass({
-    @required this.date,
-    @required this.time,
-    @required this.title,
-    @required this.name,
-    @required this.participants,
-    @required this.channelName,
-    @required this.image,
+    required this.date,
+    required this.time,
+    required this.title,
+    required this.name,
+    required this.participants,
+    required this.channelName,
+    required this.image,
   });
 }
 
@@ -97,9 +97,6 @@ class Booking with ChangeNotifier {
       final extractedDataTrainer =
           json.decode(trainerResponse.body) as Map<String, dynamic>;
       print("extrated data " + extractedDataTrainer.toString());
-      if (extractedDataTrainer == null) {
-        return null;
-      }
       extractedDataTrainer.forEach((key, value) {
         var data = extractedDataTrainer[key] as Map;
         data = data.values.first;
@@ -130,9 +127,6 @@ class Booking with ChangeNotifier {
       final response = await http.get(url);
       final extractedData = json.decode(response.body) as Map<String, dynamic>;
       print("extrated data " + extractedData.toString());
-      if (extractedData == null) {
-        return null;
-      }
       extractedData.forEach((key, value) {
         var data = extractedData[key] as Map;
         //data = data.values.first;
@@ -203,9 +197,6 @@ class Booking with ChangeNotifier {
       final response = await http.get(url);
       final extractedData = json.decode(response.body) as Map<String, dynamic>;
       print("extrated data " + extractedData.toString());
-      if (extractedData == null) {
-        return null;
-      }
       extractedData.forEach((key, value) {
         var data = extractedData[key] as Map;
         data = data.values.first;
@@ -237,9 +228,6 @@ class Booking with ChangeNotifier {
       final response = await http.get(url);
       final extractedData = json.decode(response.body) as Map<String, dynamic>;
       print("extrated data " + extractedData.toString());
-      if (extractedData == null) {
-        return null;
-      }
       extractedData.forEach((key, value) {
         var data = extractedData[key] as Map;
         //data = data.values.first;

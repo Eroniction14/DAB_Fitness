@@ -76,14 +76,14 @@ class _TrainerHomeState extends State<TrainerHome> {
     return _isLoading
         ? Center(
             child: CircularProgressIndicator(
-              backgroundColor: Theme.of(context).backgroundColor,
+              backgroundColor: Theme.of(context).colorScheme.surface,
             ),
           )
         : Scaffold(
             extendBody: true,
             key: _scaffoldKey,
             //backgroundColor: const Color(0xff000000),
-            backgroundColor: Theme.of(context).backgroundColor,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             body: Container(
               margin: const EdgeInsets.symmetric(horizontal: 10),
               child: CustomScrollView(
@@ -131,7 +131,7 @@ class _TrainerHomeState extends State<TrainerHome> {
                           return Dismissible(
                             key: ValueKey(index),
                             background: Container(
-                              color: Theme.of(context).errorColor,
+                              color: Theme.of(context).colorScheme.error,
                               child: Icon(
                                 Icons.delete,
                                 color: Colors.white,
@@ -212,7 +212,7 @@ class _TrainerHomeState extends State<TrainerHome> {
                     : Center(
                         child: Text(
                           "No Live Classes are scheduled",
-                          style: Theme.of(context).textTheme.headline3,
+                          style: Theme.of(context).textTheme.displaySmall,
                         ),
                       ),
               ),

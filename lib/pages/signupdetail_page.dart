@@ -99,7 +99,6 @@ class _SignUpDetailState extends State<SignUpDetail> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         elevation: 0,
-        brightness: Brightness.light,
         backgroundColor: Colors.white,
         leading: IconButton(
           onPressed: () {
@@ -110,7 +109,7 @@ class _SignUpDetailState extends State<SignUpDetail> {
             size: 20,
             color: Colors.black,
           ),
-        ),
+        ), systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
       body: Form(
         key: _formKey,

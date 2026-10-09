@@ -52,7 +52,7 @@ class ProfilePage extends StatelessWidget {
                               return Dismissible(
                                 key: ValueKey(index),
                                 background: Container(
-                                  color: Theme.of(context).errorColor,
+                                  color: Theme.of(context).colorScheme.error,
                                   child: Icon(
                                     Icons.delete,
                                     color: Colors.white,
@@ -74,13 +74,13 @@ class ProfilePage extends StatelessWidget {
                                         'Are you sure?',
                                         style: Theme.of(context)
                                             .textTheme
-                                            .bodyText2,
+                                            .bodyMedium,
                                       ),
                                       content: Text(
                                         'Do you want to cancel the appoinment',
                                         style: Theme.of(context)
                                             .textTheme
-                                            .bodyText2,
+                                            .bodyMedium,
                                       ),
                                       actions: <Widget>[
                                         FlatButton(
@@ -88,7 +88,7 @@ class ProfilePage extends StatelessWidget {
                                             'No',
                                             style: Theme.of(context)
                                                 .textTheme
-                                                .button,
+                                                .labelLarge,
                                           ),
                                           onPressed: () {
                                             Navigator.of(ctx).pop(false);
@@ -99,7 +99,7 @@ class ProfilePage extends StatelessWidget {
                                             'Yes',
                                             style: Theme.of(context)
                                                 .textTheme
-                                                .button,
+                                                .labelLarge,
                                           ),
                                           onPressed: () {
                                             Navigator.of(ctx).pop(true);
@@ -123,13 +123,13 @@ class ProfilePage extends StatelessWidget {
                                         appoinments[index].date,
                                         style: Theme.of(context)
                                             .textTheme
-                                            .bodyText2,
+                                            .bodyMedium,
                                       ),
                                       subtitle: Text(
                                         appoinments[index].time,
                                         style: Theme.of(context)
                                             .textTheme
-                                            .bodyText2,
+                                            .bodyMedium,
                                       ),
                                       // trailing: Text(),
                                     ),
@@ -144,7 +144,7 @@ class ProfilePage extends StatelessWidget {
                           )
                         : Center(
                             child: Text("No Appoinments scheduled",
-                                style: Theme.of(context).textTheme.headline2),
+                                style: Theme.of(context).textTheme.displayMedium),
                           ),
                   ),
                 );

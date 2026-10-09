@@ -1,6 +1,7 @@
 import 'package:agora_flutter_quickstart/pages/trainerhome_page.dart';
 import 'package:agora_flutter_quickstart/provider/database_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../animation/FadeAnimation.dart';
 import './signup_page.dart';
 import './home_page.dart';
@@ -49,8 +50,7 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         elevation: 0,
-        brightness: Brightness.light,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.white, systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
       body: Form(
         key: _formKey,

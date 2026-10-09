@@ -11,12 +11,12 @@ class User {
   final String address;
 
   User({
-    @required this.name,
-    @required this.email,
-    @required this.number,
-    @required this.gender,
-    @required this.userId,
-    @required this.address,
+    required this.name,
+    required this.email,
+    required this.number,
+    required this.gender,
+    required this.userId,
+    required this.address,
   });
 }
 
@@ -35,18 +35,18 @@ class Trainer {
   final int experience;
 
   Trainer({
-    @required this.name,
-    @required this.email,
-    @required this.age,
-    @required this.rating,
-    @required this.description,
-    @required this.experience,
-    @required this.speciality,
-    @required this.number,
-    @required this.gender,
-    @required this.trainerId,
-    @required this.address,
-    @required this.image,
+    required this.name,
+    required this.email,
+    required this.age,
+    required this.rating,
+    required this.description,
+    required this.experience,
+    required this.speciality,
+    required this.number,
+    required this.gender,
+    required this.trainerId,
+    required this.address,
+    required this.image,
   });
 }
 
@@ -75,9 +75,6 @@ class DataBase with ChangeNotifier {
       final trainerResponse = await http.get(trainerUrl);
       final extractedDataTrainer =
           json.decode(trainerResponse.body) as Map<String, dynamic>;
-      if (extractedDataTrainer == null) {
-        return null;
-      }
       extractedDataTrainer.forEach((key, value) {
         var data = extractedDataTrainer[key] as Map;
         data = data.values.first;
@@ -113,46 +110,42 @@ class DataBase with ChangeNotifier {
       final userResponse = await http.get(userUrl);
       final extractedDataUser =
           json.decode(userResponse.body) as Map<String, dynamic>;
-      if (extractedDataUser != null) {
-        if (extractedDataUser.containsKey(userId)) {
-          var data = extractedDataUser[userId] as Map;
-          data = data.values.first;
-          user = User(
-            name: data['Name'],
-            email: data['email'],
-            number: data['Number'],
-            gender: data['Gender'],
-            userId: userId,
-            address: data['Address'],
-          );
-          await loadTrainers(authToken);
-          return 1;
-        }
+      if (extractedDataUser.containsKey(userId)) {
+        var data = extractedDataUser[userId] as Map;
+        data = data.values.first;
+        user = User(
+          name: data['Name'],
+          email: data['email'],
+          number: data['Number'],
+          gender: data['Gender'],
+          userId: userId,
+          address: data['Address'],
+        );
+        await loadTrainers(authToken);
+        return 1;
       }
       final trainerResponse = await http.get(trainerUrl);
       final extractedDataTrainer =
           json.decode(trainerResponse.body) as Map<String, dynamic>;
-      if (extractedDataTrainer != null) {
-        if (extractedDataTrainer.containsKey(userId)) {
-          var data = extractedDataTrainer[userId] as Map;
-          data = data.values.first;
-          print(data);
-          trainer = Trainer(
-            name: data['Name'],
-            email: data['email'],
-            number: data['Number'],
-            gender: data['Gender'],
-            age: data['Age'],
-            description: data['Description'],
-            speciality: data['Speciality'],
-            trainerId: userId,
-            address: data['Address'],
-            rating: data['rating'],
-            image: data['Image'],
-            experience: data['experience'],
-          );
-          return 2;
-        }
+      if (extractedDataTrainer.containsKey(userId)) {
+        var data = extractedDataTrainer[userId] as Map;
+        data = data.values.first;
+        print(data);
+        trainer = Trainer(
+          name: data['Name'],
+          email: data['email'],
+          number: data['Number'],
+          gender: data['Gender'],
+          age: data['Age'],
+          description: data['Description'],
+          speciality: data['Speciality'],
+          trainerId: userId,
+          address: data['Address'],
+          rating: data['rating'],
+          image: data['Image'],
+          experience: data['experience'],
+        );
+        return 2;
       }
       notifyListeners();
     } catch (error) {

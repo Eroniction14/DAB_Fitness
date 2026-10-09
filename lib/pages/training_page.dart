@@ -68,7 +68,7 @@ class _TrainingPageState extends State<TrainingPage>
     return _isLoading
         ? Center(
             child: CircularProgressIndicator(
-              backgroundColor: Theme.of(context).backgroundColor,
+              backgroundColor: Theme.of(context).colorScheme.surface,
             ),
           )
         : Scaffold(
@@ -121,7 +121,7 @@ class _TrainingPageState extends State<TrainingPage>
             onPressed: activePage == 0 ? () {} : null,
             child: Text(
               "In-Personal",
-              style: Theme.of(context).textTheme.bodyText2,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             color: Colors.white,
             shape: RoundedRectangleBorder(
@@ -137,7 +137,7 @@ class _TrainingPageState extends State<TrainingPage>
             onPressed: activePage == 1 ? () {} : null,
             child: Text(
               "Videos",
-              style: Theme.of(context).textTheme.bodyText2,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             color: Colors.white,
             shape: RoundedRectangleBorder(
@@ -153,7 +153,7 @@ class _TrainingPageState extends State<TrainingPage>
             onPressed: activePage == 2 ? () {} : null,
             child: Text(
               "Online Classes",
-              style: Theme.of(context).textTheme.bodyText2,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             color: Colors.white,
             shape: RoundedRectangleBorder(
@@ -176,14 +176,14 @@ class _TrainingPageState extends State<TrainingPage>
         padding: const EdgeInsets.only(left: 20),
         child: Text(
           "Featured Workout Collections",
-          style: Theme.of(context).textTheme.headline4,
+          style: Theme.of(context).textTheme.headlineMedium,
         ),
       ),
       Padding(
         padding: const EdgeInsets.only(left: 20),
         child: Text(
           "Get Guidance to reach your goals",
-          style: Theme.of(context).textTheme.bodyText1,
+          style: Theme.of(context).textTheme.bodyLarge,
         ),
       ),
     ];
@@ -233,7 +233,7 @@ class _TrainingPageState extends State<TrainingPage>
         padding: const EdgeInsets.only(left: 8.0),
         child: Text(
           "What's New",
-          style: Theme.of(context).textTheme.headline4,
+          style: Theme.of(context).textTheme.headlineMedium,
         ),
       ),
       SizedBox(
@@ -271,7 +271,7 @@ class _TrainingPageState extends State<TrainingPage>
                 padding: const EdgeInsets.only(left: 20),
                 child: Text(
                   data.category,
-                  style: Theme.of(context).textTheme.headline3,
+                  style: Theme.of(context).textTheme.displaySmall,
                 ),
                 width: 150,
               ),
@@ -319,7 +319,7 @@ class _TrainingPageState extends State<TrainingPage>
           )
         : Center(
             child: Text("No Live Classes are available",
-                style: Theme.of(context).textTheme.headline3),
+                style: Theme.of(context).textTheme.displaySmall),
           );
   }
 
@@ -348,7 +348,7 @@ class _TrainingPageState extends State<TrainingPage>
                 left: 10,
                 child: Text(
                   data.name,
-                  style: Theme.of(context).textTheme.headline5,
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
               )
             ],
@@ -383,11 +383,11 @@ class _TrainingPageState extends State<TrainingPage>
             children: <Widget>[
               Text(
                 data.title,
-                style: Theme.of(context).textTheme.headline5,
+                style: Theme.of(context).textTheme.headlineSmall,
               ),
               Text(
                 data.name,
-                style: Theme.of(context).textTheme.headline2,
+                style: Theme.of(context).textTheme.displayMedium,
               ),
             ],
           ),
@@ -416,7 +416,7 @@ class _TrainingPageState extends State<TrainingPage>
                             ),
                             Text(
                               "${data.date}, ${data.time}",
-                              style: Theme.of(context).textTheme.headline2,
+                              style: Theme.of(context).textTheme.displayMedium,
                             ),
                           ],
                         ),
@@ -434,7 +434,7 @@ class _TrainingPageState extends State<TrainingPage>
                             ),
                             Text(
                               "${data.participants} Attendees",
-                              style: Theme.of(context).textTheme.headline2,
+                              style: Theme.of(context).textTheme.displayMedium,
                             ),
                           ],
                         ),
@@ -445,7 +445,7 @@ class _TrainingPageState extends State<TrainingPage>
                 RaisedButton(
                   child: Text(
                     "Join",
-                    style: Theme.of(context).textTheme.button,
+                    style: Theme.of(context).textTheme.labelLarge,
                   ),
                   onPressed: () {
                     onJoin(data.channelName);

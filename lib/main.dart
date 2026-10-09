@@ -43,58 +43,55 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primaryColor: Colors.white,
-          accentColor: Colors.blue[400],
-          backgroundColor: Colors.white,
-          buttonColor: Colors.lightBlue[300],
           appBarTheme: AppBarTheme(
-              color: Colors.white, elevation: 4, shadowColor: Colors.grey),
+              backgroundColor: Colors.white, elevation: 4, shadowColor: Colors.grey),
           textTheme: TextTheme(
-            headline1: GoogleFonts.openSans(
+            displayLarge: GoogleFonts.openSans(
               color: Colors.white,
               fontSize: 35,
               fontWeight: FontWeight.bold,
             ),
-            subtitle1: GoogleFonts.lato(
+            titleMedium: GoogleFonts.lato(
               color: Colors.black,
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
-            headline2: GoogleFonts.openSans(
+            displayMedium: GoogleFonts.openSans(
               color: Colors.white,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
-            headline3: GoogleFonts.openSans(
+            displaySmall: GoogleFonts.openSans(
               color: Colors.black,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
-            headline4: GoogleFonts.openSans(
+            headlineMedium: GoogleFonts.openSans(
               color: Colors.black,
               fontSize: 25,
               fontWeight: FontWeight.bold,
             ),
-            headline5: GoogleFonts.openSans(
+            headlineSmall: GoogleFonts.openSans(
               color: Colors.white,
               fontSize: 25,
               fontWeight: FontWeight.bold,
             ),
-            bodyText1: GoogleFonts.openSans(
+            bodyLarge: GoogleFonts.openSans(
               color: Colors.grey,
               fontSize: 20,
               fontWeight: FontWeight.w400,
             ),
-            bodyText2: GoogleFonts.lato(
+            bodyMedium: GoogleFonts.lato(
               color: Colors.black,
               fontSize: 20,
               fontWeight: FontWeight.w400,
             ),
-            button: GoogleFonts.roboto(
+            labelLarge: GoogleFonts.roboto(
               color: Colors.black,
               fontSize: 20,
               fontWeight: FontWeight.w400,
             ),
-          ),
+          ), colorScheme: ColorScheme.fromSwatch().copyWith(secondary: Colors.blue[400]), colorScheme: ColorScheme(surface: Colors.white),
         ),
         home: SplashScreen(),
         //home: VideoDetail(),

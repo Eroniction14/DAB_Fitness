@@ -123,7 +123,7 @@ class _LaunchPageState extends State<LaunchPage> {
           Text(
             content,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyText1,
+            style: Theme.of(context).textTheme.bodyLarge,
           ),
           if (currentIndex == 3)
             RaisedButton(
@@ -131,7 +131,7 @@ class _LaunchPageState extends State<LaunchPage> {
                   .pushReplacementNamed(WelcomePage.routeName),
               child: Text(
                 "Get Started !!!",
-                style: Theme.of(context).textTheme.button,
+                style: Theme.of(context).textTheme.labelLarge,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),

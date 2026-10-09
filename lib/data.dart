@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 
 class Trainer {
   final String name;
@@ -11,14 +10,14 @@ class Trainer {
   final String speciality;
 
   const Trainer({
-    @required this.name,
-    @required this.age,
-    @required this.rating,
-    @required this.image,
-    @required this.description,
-    @required this.experience,
-    @required this.number,
-    @required this.speciality,
+    required this.name,
+    required this.age,
+    required this.rating,
+    required this.image,
+    required this.description,
+    required this.experience,
+    required this.number,
+    required this.speciality,
   });
 }
 
@@ -28,9 +27,9 @@ class WorkoutCategory {
   final List<Trainer> trainers;
 
   const WorkoutCategory({
-    @required this.name,
-    @required this.image,
-    @required this.trainers,
+    required this.name,
+    required this.image,
+    required this.trainers,
   });
 }
 
@@ -43,12 +42,12 @@ class Workout {
   final String muscleGroupTargeted;
 
   const Workout({
-    @required this.name,
-    @required this.videos,
-    @required this.image,
-    @required this.reps,
-    @required this.sets,
-    @required this.muscleGroupTargeted,
+    required this.name,
+    required this.videos,
+    required this.image,
+    required this.reps,
+    required this.sets,
+    required this.muscleGroupTargeted,
   });
 }
 
@@ -58,9 +57,9 @@ class Videos {
   final List<Workout> workouts;
 
   const Videos({
-    @required this.category,
-    @required this.workouts,
-    @required this.image,
+    required this.category,
+    required this.workouts,
+    required this.image,
   });
 }
 
@@ -74,13 +73,13 @@ class LiveClass {
   final String date;
 
   const LiveClass({
-    @required this.title,
-    @required this.image,
-    @required this.time,
-    @required this.instructor,
-    @required this.channelName,
-    @required this.participants,
-    @required this.date,
+    required this.title,
+    required this.image,
+    required this.time,
+    required this.instructor,
+    required this.channelName,
+    required this.participants,
+    required this.date,
   });
 }
 
@@ -90,10 +89,10 @@ class Appoinment {
   final String time;
   final String user;
   const Appoinment({
-    @required this.addresss,
-    @required this.date,
-    @required this.time,
-    @required this.user,
+    required this.addresss,
+    required this.date,
+    required this.time,
+    required this.user,
   });
 }
 

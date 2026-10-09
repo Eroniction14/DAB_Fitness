@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import '../animation/FadeAnimation.dart';
 import './login_page.dart';
 import './signup_page.dart';
@@ -39,7 +38,7 @@ class WelcomePage extends StatelessWidget {
                       Text(
                         "Automatic identity verification which enables you to verify your identity",
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.subtitle1,
+                        style: Theme.of(context).textTheme.titleMedium,
                       )),
                 ],
               ),

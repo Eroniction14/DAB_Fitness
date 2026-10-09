@@ -53,7 +53,7 @@ class MyAppbar extends StatelessWidget {
                 width: 350,
                 child: Text(
                   content,
-                  style: Theme.of(context).textTheme.headline1,
+                  style: Theme.of(context).textTheme.displayLarge,
                   overflow: TextOverflow.clip,
                 ),
               ),
@@ -85,7 +85,7 @@ class MyAppbar extends StatelessWidget {
       backgroundColor: const Color(0xff00e0ff),
       title: Text(
         title,
-        style: Theme.of(context).textTheme.headline2,
+        style: Theme.of(context).textTheme.displayMedium,
       ),
     );
   }

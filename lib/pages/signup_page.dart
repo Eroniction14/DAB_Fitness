@@ -1,4 +1,5 @@
 import 'package:agora_flutter_quickstart/pages/signupdetail_page.dart';
+import 'package:flutter/services.dart';
 
 import './login_page.dart';
 import 'package:flutter/material.dart';
@@ -41,8 +42,7 @@ class _SignUpPageState extends State<SignUpPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         elevation: 0,
-        brightness: Brightness.light,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.white, systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
       body: Form(
         key: _formKey,

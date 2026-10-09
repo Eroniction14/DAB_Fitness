@@ -61,11 +61,11 @@ class _HomePage extends State<HomePage> with SingleTickerProviderStateMixin {
     return _isLoading
         ? Center(
             child: CircularProgressIndicator(
-              backgroundColor: Theme.of(context).backgroundColor,
+              backgroundColor: Theme.of(context).colorScheme.surface,
             ),
           )
         : Scaffold(
-            backgroundColor: Theme.of(context).backgroundColor,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             extendBody: true,
             body: Container(
               margin: const EdgeInsets.all(10),
@@ -91,7 +91,7 @@ class _HomePage extends State<HomePage> with SingleTickerProviderStateMixin {
                     Icon(Icons.arrow_drop_up),
                     Text(
                       "Sessions",
-                      style: Theme.of(context).textTheme.subtitle1,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     Icon(Icons.arrow_drop_up),
                   ],
@@ -117,7 +117,7 @@ class _HomePage extends State<HomePage> with SingleTickerProviderStateMixin {
                         return Dismissible(
                           key: ValueKey(index),
                           background: Container(
-                            color: Theme.of(context).errorColor,
+                            color: Theme.of(context).colorScheme.error,
                             child: Icon(
                               Icons.delete,
                               color: Colors.white,
@@ -137,17 +137,17 @@ class _HomePage extends State<HomePage> with SingleTickerProviderStateMixin {
                               builder: (ctx) => AlertDialog(
                                 title: Text(
                                   'Are you sure?',
-                                  style: Theme.of(context).textTheme.bodyText2,
+                                  style: Theme.of(context).textTheme.bodyMedium,
                                 ),
                                 content: Text(
                                   'Do you want to cancel the appoinment',
-                                  style: Theme.of(context).textTheme.bodyText2,
+                                  style: Theme.of(context).textTheme.bodyMedium,
                                 ),
                                 actions: <Widget>[
                                   FlatButton(
                                     child: Text(
                                       'No',
-                                      style: Theme.of(context).textTheme.button,
+                                      style: Theme.of(context).textTheme.labelLarge,
                                     ),
                                     onPressed: () {
                                       Navigator.of(ctx).pop(false);
@@ -156,7 +156,7 @@ class _HomePage extends State<HomePage> with SingleTickerProviderStateMixin {
                                   FlatButton(
                                     child: Text(
                                       'Yes',
-                                      style: Theme.of(context).textTheme.button,
+                                      style: Theme.of(context).textTheme.labelLarge,
                                     ),
                                     onPressed: () {
                                       Navigator.of(ctx).pop(true);
@@ -178,11 +178,11 @@ class _HomePage extends State<HomePage> with SingleTickerProviderStateMixin {
                                 leading: Icon(Icons.alarm_on),
                                 title: Text(
                                   appoinments[index].date,
-                                  style: Theme.of(context).textTheme.bodyText2,
+                                  style: Theme.of(context).textTheme.bodyMedium,
                                 ),
                                 subtitle: Text(
                                   appoinments[index].time,
-                                  style: Theme.of(context).textTheme.bodyText2,
+                                  style: Theme.of(context).textTheme.bodyMedium,
                                 ),
                                 // trailing: Text(),
                               ),
@@ -194,7 +194,7 @@ class _HomePage extends State<HomePage> with SingleTickerProviderStateMixin {
                     )
                   : Center(
                       child: Text("No Appoinments are scheduled",
-                          style: Theme.of(context).textTheme.headline3),
+                          style: Theme.of(context).textTheme.displaySmall),
                     ),
             ),
           );
@@ -233,7 +233,7 @@ class _HomePage extends State<HomePage> with SingleTickerProviderStateMixin {
                   height: 30,
                   child: Text(
                     "Trending",
-                    style: Theme.of(context).textTheme.headline4,
+                    style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   decoration: BoxDecoration(
                     border: Border(
@@ -268,7 +268,7 @@ class _HomePage extends State<HomePage> with SingleTickerProviderStateMixin {
 
   Widget buildListHorizontal(String title) {
     return Stack(
-      overflow: Overflow.visible,
+      clipBehavior: Clip.none,
       children: [
         Card(
           child: Container(
@@ -311,7 +311,7 @@ class _HomePage extends State<HomePage> with SingleTickerProviderStateMixin {
                       ),
                       Text(
                         workoutList[index].name,
-                        style: Theme.of(context).textTheme.headline3,
+                        style: Theme.of(context).textTheme.displaySmall,
                       )
                     ],
                   ),
@@ -339,7 +339,7 @@ class _HomePage extends State<HomePage> with SingleTickerProviderStateMixin {
               padding: const EdgeInsets.all(10),
               child: Text(
                 title,
-                style: Theme.of(context).textTheme.headline3,
+                style: Theme.of(context).textTheme.displaySmall,
               ),
             ),
           ),
@@ -356,7 +356,7 @@ class _HomePage extends State<HomePage> with SingleTickerProviderStateMixin {
           padding: const EdgeInsets.only(left: 20),
           child: Text(
             title,
-            style: Theme.of(context).textTheme.headline4,
+            style: Theme.of(context).textTheme.headlineMedium,
           ),
         ),
         Container(
@@ -410,7 +410,7 @@ class _HomePage extends State<HomePage> with SingleTickerProviderStateMixin {
                           width: 144,
                           child: Text(
                             workoutList[index].name,
-                            style: Theme.of(context).textTheme.headline3,
+                            style: Theme.of(context).textTheme.displaySmall,
                             overflow: TextOverflow.clip,
                           ),
                         ),
