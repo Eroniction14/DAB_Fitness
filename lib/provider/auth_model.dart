@@ -1,69 +1,67 @@
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+
+const _firebaseApiKey = 'AIzaSyBiVubsK3TN633pTTfH0ebYiS9HDkAgf1A';
+
 class Auth with ChangeNotifier {
-  String _token;
-  DateTime _expiryDate;
-  String _userId;
+  String? _token;
+  DateTime? _expiryDate;
+  String? _userId;
 
-  bool get isAuth {
-    return token != null;
-  }
+  bool get isAuth => token != null;
 
-  String get token {
-    if (_expiryDate.isAfter(DateTime.now())) {
+  String? get token {
+    final expiry = _expiryDate;
+    if (_token != null && expiry != null && expiry.isAfter(DateTime.now())) {
       return _token;
     }
     return null;
   }
 
-  String get userId {
-    return _userId;
-  }
+  String? get userId => _userId;
 
-  Future<Map> _authenticate(
+  Future<Map<String, dynamic>> _authenticate(
       String email, String password, String urlSegment) async {
-    final url =
-        "https://identitytoolkit.googleapis.com/v1/accounts:$urlSegment?key=AIzaSyCH8RIUBAKh9E4GB1OZuFlI7KRaviQMKSU";
-    print('auth');
+    final url = Uri.parse(
+      'https://identitytoolkit.googleapis.com/v1/accounts:$urlSegment?key=$_firebaseApiKey',
+    );
     final response = await http.post(
       url,
+      headers: {'Content-Type': 'application/json'},
       body: json.encode({
-        "email": email,
-        "password": password,
-        "returnSecureToken": true,
+        'email': email,
+        'password': password,
+        'returnSecureToken': true,
       }),
     );
-    final responseData = json.decode(response.body);
-    // if (responseData['error'] != null) {
-    //   throw HttpException(responseData['error']['message']);
-    // }
-    _token = responseData['idToken'];
-    _userId = responseData['localId'];
+    final responseData = json.decode(response.body) as Map<String, dynamic>;
+
+    // Wrong password, existing email, etc. Return the error so the UI can show it.
+    if (responseData['error'] != null) {
+      return responseData;
+    }
+
+    _token = responseData['idToken'] as String?;
+    _userId = responseData['localId'] as String?;
     _expiryDate = DateTime.now().add(
-      Duration(
-        seconds: int.parse(
-          responseData['expiresIn'],
-        ),
-      ),
+      Duration(seconds: int.parse(responseData['expiresIn'] as String)),
     );
     notifyListeners();
     return responseData;
   }
 
-  Future<Map> signUp(String email, String password) {
-    return _authenticate(email, password, "signUp");
-  }
+  Future<Map<String, dynamic>> signUp(String email, String password) =>
+      _authenticate(email, password, 'signUp');
 
-  Future<Map> signIn(String email, String password) {
-    return _authenticate(email, password, "signInWithPassword");
-  }
+  Future<Map<String, dynamic>> signIn(String email, String password) =>
+      _authenticate(email, password, 'signInWithPassword');
 
   Future<void> logout() async {
     _token = null;
     _userId = null;
     _expiryDate = null;
-    return;
+    notifyListeners();
   }
 }
