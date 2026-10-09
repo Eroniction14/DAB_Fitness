@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import './pages/home_page.dart';
-import './pages/login_page.dart';
-import './pages/signup_page.dart';
-import './pages/splashscreen.dart';
-import './pages/trainer_page.dart';
-import './pages/trainerhome_page.dart';
-import './pages/training_page.dart';
-import './pages/videodetail_page.dart';
-import './pages/welcome_page.dart';
-import './provider/auth_model.dart';
-import './provider/booking_model.dart';
-import './provider/database_model.dart';
+import 'package:dab_fitness/providers/auth_model.dart';
+import 'package:dab_fitness/providers/booking_model.dart';
+import 'package:dab_fitness/providers/database_model.dart';
+import 'package:dab_fitness/screens/auth/login_page.dart';
+import 'package:dab_fitness/screens/auth/signup_page.dart';
+import 'package:dab_fitness/screens/home/home_page.dart';
+import 'package:dab_fitness/screens/onboarding/splash_screen.dart';
+import 'package:dab_fitness/screens/onboarding/welcome_page.dart';
+import 'package:dab_fitness/screens/trainer_home/trainer_home_page.dart';
+import 'package:dab_fitness/screens/trainers/trainer_list_page.dart';
+import 'package:dab_fitness/screens/training/training_page.dart';
+import 'package:dab_fitness/screens/training/video_detail_page.dart';
 
 void main() => runApp(const MyApp());
 
@@ -24,11 +24,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => Auth()),
-        ChangeNotifierProvider(create: (_) => DataBase()),
-        ChangeNotifierProxyProvider<Auth, Booking>(
-          create: (_) => Booking(null, null),
-          update: (_, auth, __) => Booking(auth.token, auth.userId),
+        ChangeNotifierProvider(create: (_) => AuthModel()),
+        ChangeNotifierProvider(create: (_) => DatabaseModel()),
+        ChangeNotifierProxyProvider<AuthModel, BookingModel>(
+          create: (_) => BookingModel(null, null),
+          update: (_, auth, __) => BookingModel(auth.token, auth.userId),
         ),
       ],
       child: MaterialApp(
@@ -65,16 +65,16 @@ class MyApp extends StatelessWidget {
                 color: Colors.black, fontSize: 20, fontWeight: FontWeight.w400),
           ),
         ),
-        home: SplashScreen(),
+        home: const SplashScreen(),
         routes: {
           WelcomePage.routeName: (_) => WelcomePage(),
           LoginPage.routeName: (_) => LoginPage(),
           SignUpPage.routeName: (_) => SignUpPage(),
-          TrainerPage.routeName: (_) => TrainerPage(),
+          TrainerListPage.routeName: (_) => TrainerListPage(),
           HomePage.routeName: (_) => HomePage(),
           TrainingPage.routeName: (_) => TrainingPage(),
-          VideoDetail.routeName: (_) => VideoDetail(),
-          TrainerHome.routeName: (_) => TrainerHome(),
+          VideoDetailPage.routeName: (_) => VideoDetailPage(),
+          TrainerHomePage.routeName: (_) => TrainerHomePage(),
         },
       ),
     );

@@ -25,7 +25,6 @@ on the Android emulator. We are now refactoring it into a proper production-styl
 - `android/app/build.gradle.kts` uses `compileSdk = 37`.
 - `AndroidManifest.xml` declares INTERNET, ACCESS_NETWORK_STATE, CAMERA, RECORD_AUDIO,
   MODIFY_AUDIO_SETTINGS, BLUETOOTH_CONNECT, ACCESS_COARSE/FINE_LOCATION. Label "DAB Fitness".
-- `android_old/` is the 2021 Android folder kept for reference — safe to delete in Phase 1.
 
 ## Backend
 
@@ -67,7 +66,7 @@ if you normalise it, migrate or read both spellings — do not silently break ex
 
 ## Secrets
 
-`lib/provider/auth_model.dart` and `lib/utils/settings.dart` currently hard-code the
+`lib/providers/auth_model.dart` and `lib/config/agora_config.dart` currently hard-code the
 Firebase Web API key and Agora App ID. Move secrets into a git-ignored config
 (e.g. `--dart-define-from-file=config/env.json`, with a committed `env.example.json`).
 Never commit real keys. (`firebase_options.dart` from FlutterFire is fine to commit.)
@@ -78,7 +77,7 @@ Rules for every phase: `flutter analyze` shows 0 errors (aim for 0 warnings),
 the app runs on the emulator, and the phase is committed with a clear message.
 Ask the user before deleting anything that is not listed here.
 
-### Phase 1 — Structure and naming (no behaviour change)
+### Phase 1 — Structure and naming (no behaviour change) — DONE
 - Rename package `agora_flutter_quickstart` -> `dab_fitness` (pubspec, all imports,
   Android applicationId/namespace -> `com.dabfitness.dab_fitness`, MainActivity path).
 - snake_case all file names (FadeAnimation.dart, trainerDetail_page.dart,

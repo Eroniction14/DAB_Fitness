@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.dabfitness.agora_flutter_quickstart"
+    namespace = "com.dabfitness.dab_fitness"
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.dabfitness.agora_flutter_quickstart"
+        applicationId = "com.dabfitness.dab_fitness"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
