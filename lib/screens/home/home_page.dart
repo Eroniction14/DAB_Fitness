@@ -8,6 +8,7 @@ import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/widgets/app_bar_widget.dart';
 import 'package:dab_fitness/widgets/booking_tile.dart';
 import 'package:dab_fitness/widgets/collapsible_sheet.dart';
+import 'package:dab_fitness/widgets/refreshable_list.dart';
 import 'package:dab_fitness/widgets/video_player_widget.dart';
 
 class HomePage extends StatefulWidget {
@@ -19,29 +20,19 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePage extends State<HomePage> {
-  bool _isInit = true;
-  bool _isLoading = false;
-
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isInit) return;
-    _isInit = false;
-    _isLoading = true;
-    final booking = Provider.of<BookingModel>(context, listen: false);
-    booking.loadMyAppoinments().catchError((e) {
-      debugPrint('Failed to load appointments: $e');
-    }).whenComplete(() {
-      if (mounted) setState(() => _isLoading = false);
+  void initState() {
+    super.initState();
+    // The Sessions sheet shows its own loading / error state. After the
+    // first frame, because loading notifies listeners straight away.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<BookingModel>().loadMyAppoinments();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = Provider.of<DatabaseModel>(context, listen: false).getUser;
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    final user = context.watch<DatabaseModel>().getUser;
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       extendBody: true,
@@ -63,19 +54,16 @@ class _HomePage extends State<HomePage> {
   }
 
   Widget _sessionsList() {
-    final appointments = context.watch<BookingModel>().getAppoinments;
-    if (appointments.isEmpty) {
-      return Center(
-        child: Text("No appointments are scheduled",
-            style: Theme.of(context).textTheme.displaySmall),
-      );
-    }
-    return ListView.builder(
-      itemCount: appointments.length,
-      itemBuilder: (context, index) {
-        final booking = appointments[index];
-        return BookingTile(booking, key: ValueKey(booking.key));
-      },
+    final booking = context.watch<BookingModel>();
+    return RefreshableList(
+      items: booking.getAppoinments,
+      isLoading: booking.bookingsLoading,
+      error: booking.bookingsError,
+      onRefresh: booking.refreshBookings,
+      emptyMessage: "No sessions booked yet.\nFind a trainer under Trainings.",
+      emptyIcon: Icons.event_available,
+      itemBuilder: (context, booking) =>
+          BookingTile(booking, key: ValueKey(booking.key)),
     );
   }
 

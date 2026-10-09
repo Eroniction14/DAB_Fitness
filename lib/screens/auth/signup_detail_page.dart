@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:dab_fitness/providers/auth_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
+import 'package:dab_fitness/screens/auth/logout.dart';
 import 'package:dab_fitness/screens/home/home_page.dart';
 import 'package:dab_fitness/screens/trainer_home/trainer_home_page.dart';
 import 'package:dab_fitness/services/auth_service.dart';
@@ -11,11 +12,21 @@ import 'package:dab_fitness/services/location_service.dart';
 import 'package:dab_fitness/widgets/fade_animation.dart';
 
 class SignUpDetail extends StatefulWidget {
-  /// 0 = User, 1 = Trainer
-  final int mode;
+  /// 0 = User, 1 = Trainer; null lets the user choose ([SignUpDetail.complete]).
+  final int? mode;
+
+  /// `email` and `password` from the first sign-up step.
   final Map<String, String> authData;
 
-  const SignUpDetail(this.mode, this.authData, {super.key});
+  const SignUpDetail(int this.mode, this.authData, {super.key});
+
+  /// "Finish your profile" for a signed-in account whose sign-up never saved
+  /// a profile. No new account is created.
+  const SignUpDetail.complete({super.key})
+      : mode = null,
+        authData = const {};
+
+  bool get isCompleting => mode == null;
 
   @override
   State<SignUpDetail> createState() => _SignUpDetailState();
@@ -26,8 +37,13 @@ class _SignUpDetailState extends State<SignUpDetail> {
   late final Map<String, String> _data = Map.of(widget.authData);
   String _gender = 'male';
   bool _isLoading = false;
+  late int _mode = widget.mode ?? 0;
 
-  bool get _isTrainer => widget.mode == 1;
+  /// The account the profile is for, once it exists. Set after sign-up so
+  /// a failed profile save can be retried without signing up again.
+  String? _uid;
+
+  bool get _isTrainer => _mode == 1;
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -52,15 +68,26 @@ class _SignUpDetailState extends State<SignUpDetail> {
       _data['Gender'] = _gender;
       _data['Address'] = await getCity();
 
-      final uid = await auth.signUp(_data['email']!, _data['password']!);
+      final String uid;
+      if (widget.isCompleting) {
+        final current = auth.userId;
+        if (current == null) {
+          if (mounted) _showError('Please log in again.');
+          return;
+        }
+        uid = current;
+        _data['email'] = auth.email ?? '';
+      } else {
+        uid = _uid ??= await auth.signUp(_data['email']!, _data['password']!);
+      }
 
       final saved = _isTrainer
           ? await database.registerTrainerData(uid, _data)
           : await database.registerUserData(uid, _data);
       if (!saved) {
         if (mounted) {
-          _showError(
-              'Account created, but saving your profile failed. Try logging in.');
+          _showError("Couldn't save your profile. Check your connection and "
+              "tap ${_submitLabel()} again.");
         }
         return;
       }
@@ -88,10 +115,22 @@ class _SignUpDetailState extends State<SignUpDetail> {
         elevation: 0,
         backgroundColor: Colors.white,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_ios, size: 20, color: Colors.black),
-        ),
+        // When completing there is nowhere to go back to; offer log out.
+        automaticallyImplyLeading: false,
+        leading: widget.isCompleting
+            ? null
+            : IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back_ios,
+                    size: 20, color: Colors.black),
+              ),
+        actions: [
+          if (widget.isCompleting)
+            TextButton(
+              onPressed: () => logOut(context),
+              child: const Text('Log out'),
+            ),
+        ],
       ),
       body: SafeArea(
         child: Form(
@@ -106,6 +145,28 @@ class _SignUpDetailState extends State<SignUpDetail> {
                       style:
                           TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
                 ),
+                if (widget.isCompleting) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    "Your account exists but its profile wasn't saved. "
+                    "Finish it below.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 15, color: Colors.grey.shade700),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<int>(
+                      segments: const [
+                        ButtonSegment(value: 0, label: Text("User")),
+                        ButtonSegment(value: 1, label: Text("Trainer")),
+                      ],
+                      selected: {_mode},
+                      onSelectionChanged: (s) =>
+                          setState(() => _mode = s.first),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 20),
                 FadeAnimation(
                   1.2,
@@ -163,6 +224,8 @@ class _SignUpDetailState extends State<SignUpDetail> {
     );
   }
 
+  String _submitLabel() => widget.isCompleting ? "Save profile" : "Sign up";
+
   Widget _signUpButton() {
     return Container(
       padding: const EdgeInsets.only(top: 3, left: 3),
@@ -184,8 +247,9 @@ class _SignUpDetailState extends State<SignUpDetail> {
                 height: 24,
                 child: CircularProgressIndicator(strokeWidth: 2.5),
               )
-            : const Text("Sign up",
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
+            : Text(_submitLabel(),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
       ),
     );
   }

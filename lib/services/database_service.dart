@@ -4,6 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:dab_fitness/models/booking.dart';
 import 'package:dab_fitness/models/json_helpers.dart';
 import 'package:dab_fitness/models/live_class.dart';
+import 'package:dab_fitness/models/profile.dart';
 import 'package:dab_fitness/models/trainer.dart';
 import 'package:dab_fitness/models/user_profile.dart';
 
@@ -46,6 +47,13 @@ class DatabaseService {
 
   Future<void> saveTrainer(Trainer trainer) =>
       _db.ref('trainers/${trainer.trainerId}').set(trainer.toJson());
+
+  /// Writes only the given fields (legacy names, e.g. `Name`), leaving the
+  /// rest of the profile untouched.
+  Future<void> updateProfile(Profile profile, Map<String, String> changes) {
+    final node = profile is Trainer ? 'trainers' : 'users';
+    return _db.ref('$node/${profile.id}').update(changes);
+  }
 
   // ---------- Bookings ----------
 
@@ -113,14 +121,45 @@ class DatabaseService {
       .push()
       .set(liveClass.toJson());
 
-  /// Every trainer's live classes.
-  Future<List<LiveClass>> getAllLiveClasses() async => [
-        for (final trainerClasses in jsonChildren(await _read('liveClass')))
-          ...jsonChildren(trainerClasses).map(LiveClass.fromJson),
-      ];
+  /// Every trainer's live classes, updated live (e.g. attendee counts).
+  Stream<List<LiveClass>> watchAllLiveClasses() =>
+      _db.ref('liveClass').onValue.map((event) => [
+            for (final trainerClasses in jsonChildren(event.snapshot.value))
+              ..._liveClasses(trainerClasses),
+          ]);
 
-  Future<List<LiveClass>> getTrainerLiveClasses(String trainerId) async =>
-      jsonChildren(await _read('liveClass/$trainerId'))
-          .map(LiveClass.fromJson)
-          .toList();
+  /// One trainer's live classes, updated live.
+  Stream<List<LiveClass>> watchTrainerLiveClasses(String trainerId) => _db
+      .ref('liveClass/$trainerId')
+      .onValue
+      .map((event) => _liveClasses(event.snapshot.value));
+
+  /// A single class, updated live; null once it's deleted.
+  Stream<LiveClass?> watchLiveClass(String trainerId, String key) =>
+      _db.ref('liveClass/$trainerId/$key').onValue.map((event) {
+        final data = asJsonMap(event.snapshot.value);
+        return data == null ? null : LiveClass.fromJson(key, data);
+      });
+
+  DatabaseReference _attendee(LiveClass liveClass, String userId) => _db.ref(
+      'liveClass/${liveClass.trainerId}/${liveClass.key}/attendees/$userId');
+
+  /// Marks [userId] as in the class. The server removes the mark if the
+  /// connection drops (app killed, network lost), so counts don't go stale.
+  Future<void> joinLiveClass(LiveClass liveClass, String userId) async {
+    final ref = _attendee(liveClass, userId);
+    await ref.onDisconnect().remove();
+    await ref.set(true);
+  }
+
+  Future<void> leaveLiveClass(LiveClass liveClass, String userId) async {
+    final ref = _attendee(liveClass, userId);
+    await ref.remove();
+    await ref.onDisconnect().cancel();
+  }
+
+  List<LiveClass> _liveClasses(Object? node) => [
+        for (final entry in jsonChildEntries(node))
+          LiveClass.fromJson(entry.key, entry.value),
+      ];
 }

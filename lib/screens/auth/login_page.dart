@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:dab_fitness/providers/auth_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
+import 'package:dab_fitness/screens/auth/signup_detail_page.dart';
 import 'package:dab_fitness/screens/auth/signup_page.dart';
 import 'package:dab_fitness/screens/home/home_page.dart';
 import 'package:dab_fitness/screens/trainer_home/trainer_home_page.dart';
@@ -52,11 +53,9 @@ class _LoginPageState extends State<LoginPage> {
         case AccountType.trainer:
           navigator.pushReplacementNamed(TrainerHomePage.routeName);
         case AccountType.none:
-          await auth.logout();
-          if (mounted) {
-            _showError(
-                'No profile found for this account. Please finish signing up.');
-          }
+          // Sign-up never saved a profile: finish it.
+          navigator.pushReplacement(
+              MaterialPageRoute(builder: (_) => const SignUpDetail.complete()));
       }
     } catch (e) {
       debugPrint('Login failed: $e');

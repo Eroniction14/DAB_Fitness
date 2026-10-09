@@ -13,6 +13,8 @@ class AuthService {
 
   String? get currentUserId => _auth.currentUser?.uid;
 
+  String? get currentEmail => _auth.currentUser?.email;
+
   /// Emits the signed-in uid (or null) now and on every sign-in/out.
   Stream<String?> get userIdChanges =>
       _auth.authStateChanges().map((user) => user?.uid);

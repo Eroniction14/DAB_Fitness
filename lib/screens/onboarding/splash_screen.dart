@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'package:dab_fitness/providers/auth_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
+import 'package:dab_fitness/screens/auth/signup_detail_page.dart';
 import 'package:dab_fitness/screens/home/home_page.dart';
 import 'package:dab_fitness/screens/onboarding/launch_page.dart';
 import 'package:dab_fitness/screens/trainer_home/trainer_home_page.dart';
@@ -51,9 +52,9 @@ class _SplashScreenState extends State<SplashScreen> {
         case AccountType.trainer:
           navigator.pushReplacementNamed(TrainerHomePage.routeName);
         case AccountType.none:
-          // Signed in, but sign-up never saved a profile.
-          await auth.logout();
-          _toOnboarding(navigator);
+          // Signed in, but sign-up never saved a profile: finish it.
+          navigator.pushReplacement(
+              MaterialPageRoute(builder: (_) => const SignUpDetail.complete()));
       }
     } catch (e) {
       debugPrint('Restoring session failed: $e');

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:dab_fitness/models/profile.dart';
 import 'package:dab_fitness/screens/auth/logout.dart';
 import 'package:dab_fitness/screens/profile/profile_page.dart';
 import 'package:dab_fitness/screens/training/training_page.dart';
@@ -9,8 +10,8 @@ class MyAppbar extends StatelessWidget {
   final String title;
   final bool ishome;
 
-  /// The signed-in `UserProfile` or `Trainer`; null hides the profile button.
-  final dynamic user;
+  /// The signed-in account; null hides the profile button.
+  final Profile? user;
 
   /// Adds a log-out button next to the profile button.
   final bool showLogout;
@@ -29,7 +30,7 @@ class MyAppbar extends StatelessWidget {
             ),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => ProfilePage(user),
+                builder: (context) => const ProfilePage(),
               ),
             ),
           ),

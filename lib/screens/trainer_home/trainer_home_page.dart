@@ -1,7 +1,7 @@
-import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 import 'package:dab_fitness/models/booking.dart';
@@ -12,6 +12,7 @@ import 'package:dab_fitness/screens/live_class/call_page.dart';
 import 'package:dab_fitness/widgets/app_bar_widget.dart';
 import 'package:dab_fitness/widgets/booking_tile.dart';
 import 'package:dab_fitness/widgets/collapsible_sheet.dart';
+import 'package:dab_fitness/widgets/refreshable_list.dart';
 
 class TrainerHomePage extends StatefulWidget {
   static const routeName = '/trainerHome';
@@ -22,30 +23,33 @@ class TrainerHomePage extends StatefulWidget {
 }
 
 class _TrainerHomePageState extends State<TrainerHomePage> {
-  bool _isInit = true;
-  bool _isLoading = false;
+  late Stream<List<LiveClass>> _classes;
+  Timer? _ticker;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isInit) return;
-    _isInit = false;
-    _isLoading = true;
-    _load();
+  void initState() {
+    super.initState();
+    final booking = context.read<BookingModel>();
+    // After the first frame, because loading notifies listeners straight away.
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => booking.getMyAppoinments());
+    _classes = booking.watchLiveClasses(mine: true);
+    // Re-filter once a minute so classes disappear when they end.
+    _ticker = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
   }
 
-  Future<void> _load() async {
-    final booking = context.read<BookingModel>();
-    try {
-      await Future.wait([
-        booking.getMyAppoinments(),
-        booking.loadLiveClassTrainer(),
-      ]);
-    } catch (e) {
-      debugPrint('Failed to load trainer data: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  /// Pull-to-refresh / Retry on My Classes: re-subscribe.
+  Future<void> _refreshClasses() async {
+    setState(() =>
+        _classes = context.read<BookingModel>().watchLiveClasses(mine: true));
   }
 
   Future<void> _scheduleClass(String trainerName) async {
@@ -62,6 +66,7 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
             details.time,
             trainerName,
             details.title,
+            details.durationMinutes,
           );
       messenger.showSnackBar(
         const SnackBar(
@@ -69,6 +74,8 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
           duration: Duration(seconds: 2),
         ),
       );
+    } on BookingException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       debugPrint('Scheduling class failed: $e');
       messenger.showSnackBar(
@@ -77,36 +84,10 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
     }
   }
 
-  Future<void> _onJoin(String channelName) async {
-    if (channelName.isEmpty) return;
-    final statuses = await [Permission.camera, Permission.microphone].request();
-    if (!mounted) return;
-    if (statuses.values.any((s) => !s.isGranted)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Camera and microphone access are needed to join.'),
-        ),
-      );
-      return;
-    }
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CallPage(
-          channelName: channelName,
-          role: ClientRoleType.clientRoleBroadcaster,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final booking = context.watch<BookingModel>();
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-    final trainer = context.read<DatabaseModel>().getTrainer;
+    final trainer = context.watch<DatabaseModel>().getTrainer;
 
     return Scaffold(
       extendBody: true,
@@ -117,15 +98,13 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
           slivers: [
             MyAppbar("Hello, ${trainer.name}", "Home", false, trainer,
                 showLogout: true),
-            SliverFillRemaining(
-              child: _appointmentsList(booking.getAppoinments),
-            ),
+            SliverFillRemaining(child: _appointmentsList(booking)),
           ],
         ),
       ),
       bottomSheet: CollapsibleSheet(
         title: "My Classes",
-        child: _classesList(booking.getLiveClass),
+        child: _classesList(),
       ),
       // Scaffold centres the FAB on the bottom sheet's top edge; lift it
       // clear of the My Classes bar.
@@ -142,62 +121,60 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
 
   // ---------- Bookings made with this trainer ----------
 
-  Widget _appointmentsList(List<Booking> appointments) {
-    if (appointments.isEmpty) {
-      return Center(
-        child: Text("No bookings yet",
-            style: Theme.of(context).textTheme.displaySmall),
-      );
-    }
+  Widget _appointmentsList(BookingModel booking) {
     const bold20 = TextStyle(fontSize: 20, fontWeight: FontWeight.bold);
-    return ListView.separated(
-      padding: const EdgeInsets.only(bottom: 80),
-      itemCount: appointments.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 20),
-      itemBuilder: (context, index) {
-        final slot = appointments[index];
-        return Card(
-          margin: const EdgeInsets.all(10),
-          elevation: 5,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Text(slot.user, style: bold20),
-                const SizedBox(height: 10),
-                Text("Date: ${slot.date}\nTime: ${slot.time}",
-                    textAlign: TextAlign.center, style: bold20),
-                const Divider(),
-                Text(slot.address, textAlign: TextAlign.center, style: bold20),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () => confirmAndCancelBooking(context, slot),
-                  child: const Text("Cancel", style: bold20),
+    return RefreshableList<Booking>(
+      items: booking.getAppoinments,
+      isLoading: booking.bookingsLoading,
+      error: booking.bookingsError,
+      onRefresh: booking.refreshBookings,
+      emptyMessage: "No bookings yet",
+      emptyIcon: Icons.event_available,
+      padding: const EdgeInsets.only(bottom: 120),
+      itemBuilder: (context, slot) => Card(
+        key: ValueKey(slot.key),
+        margin: const EdgeInsets.all(10),
+        elevation: 5,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Text(slot.user, style: bold20),
+              const SizedBox(height: 10),
+              Text("Date: ${slot.date}\nTime: ${slot.time}",
+                  textAlign: TextAlign.center, style: bold20),
+              const Divider(),
+              Text(slot.address, textAlign: TextAlign.center, style: bold20),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
                 ),
-              ],
-            ),
+                onPressed: () => confirmAndCancelBooking(context, slot),
+                child: const Text("Cancel", style: bold20),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Widget _classesList(List<LiveClass> liveClasses) {
-    if (liveClasses.isEmpty) {
-      return Center(
-        child: Text("No live classes are scheduled",
-            style: Theme.of(context).textTheme.displaySmall),
-      );
-    }
-    return ListView.builder(
-      itemCount: liveClasses.length,
-      itemBuilder: (context, index) {
-        final liveClass = liveClasses[index];
-        return Card(
+  // ---------- My upcoming live classes ----------
+
+  Widget _classesList() {
+    return StreamBuilder<List<LiveClass>>(
+      stream: _classes,
+      builder: (context, snapshot) => RefreshableList<LiveClass>(
+        items: upcomingClasses(snapshot.data ?? const [], DateTime.now()),
+        isLoading: !snapshot.hasData && !snapshot.hasError,
+        error: snapshot.error,
+        onRefresh: _refreshClasses,
+        emptyMessage: "No upcoming live classes.\nTap Live Class to add one.",
+        emptyIcon: Icons.live_tv,
+        itemBuilder: (context, liveClass) => Card(
+          key: ValueKey(liveClass.key),
           margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
           child: Padding(
             padding: const EdgeInsets.all(8),
@@ -211,20 +188,22 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
                     fontSize: 18),
               ),
               subtitle: Text(
-                liveClass.title,
+                "${liveClass.title} - ${liveClass.durationMinutes} min"
+                " - ${liveClass.participants} watching",
                 style: const TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
                     fontSize: 16),
               ),
               trailing: ElevatedButton(
-                onPressed: () => _onJoin(liveClass.channelName),
-                child: const Text("Join"),
+                onPressed: () =>
+                    openLiveClass(context, liveClass, asHost: true),
+                child: const Text("Start"),
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
@@ -235,7 +214,8 @@ class _ClassDetails {
   final String title;
   final DateTime date;
   final TimeOfDay time;
-  const _ClassDetails(this.title, this.date, this.time);
+  final int durationMinutes;
+  const _ClassDetails(this.title, this.date, this.time, this.durationMinutes);
 }
 
 class _LiveClassDialog extends StatefulWidget {
@@ -250,6 +230,7 @@ class _LiveClassDialogState extends State<_LiveClassDialog> {
   final _titleController = TextEditingController();
   DateTime? _date;
   TimeOfDay? _time;
+  int _duration = LiveClass.defaultDurationMinutes;
   String? _error;
 
   @override
@@ -292,8 +273,14 @@ class _LiveClassDialogState extends State<_LiveClassDialog> {
       setState(() => _error = 'Pick a date and a time');
       return;
     }
+    final start = DateTime(
+        _date!.year, _date!.month, _date!.day, _time!.hour, _time!.minute);
+    if (!start.isAfter(DateTime.now())) {
+      setState(() => _error = 'That time has already passed');
+      return;
+    }
     Navigator.of(context).pop(
-      _ClassDetails(_titleController.text.trim(), _date!, _time!),
+      _ClassDetails(_titleController.text.trim(), _date!, _time!, _duration),
     );
   }
 
@@ -340,6 +327,20 @@ class _LiveClassDialogState extends State<_LiveClassDialog> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int>(
+                initialValue: _duration,
+                decoration: const InputDecoration(
+                  labelText: 'Duration',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  for (final minutes in LiveClass.durationChoices)
+                    DropdownMenuItem(
+                        value: minutes, child: Text('$minutes minutes')),
+                ],
+                onChanged: (v) => setState(() => _duration = v ?? _duration),
               ),
               if (_error != null)
                 Padding(

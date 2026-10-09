@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:dab_fitness/models/profile.dart';
 import 'package:dab_fitness/models/trainer.dart';
 import 'package:dab_fitness/models/user_profile.dart';
 import 'package:dab_fitness/services/database_service.dart';
@@ -17,13 +18,33 @@ class DatabaseModel with ChangeNotifier {
   Trainer? trainer;
   List<Trainer> trainersList = [];
 
+  /// The signed-in account's profile, user or trainer.
+  Profile? get profile => user ?? trainer;
+
   UserProfile get getUser => user!;
   Trainer get getTrainer => trainer!;
   List<Trainer> get getTrainersData => trainersList;
 
+  /// True while the trainer list is being (re)loaded.
+  bool trainersLoading = false;
+
+  /// The error from the last failed trainer-list load, or null.
+  Object? trainersError;
+
+  /// Loads every trainer. Errors are kept in [trainersError], not thrown.
   Future<void> loadTrainers() async {
-    trainersList = await _service.getTrainers();
+    trainersLoading = true;
     notifyListeners();
+    try {
+      trainersList = await _service.getTrainers();
+      trainersError = null;
+    } catch (e) {
+      debugPrint('Loading trainers failed: $e');
+      trainersError = e;
+    } finally {
+      trainersLoading = false;
+      notifyListeners();
+    }
   }
 
   /// Loads the profile for [userId] and says whether it is a user or trainer.
@@ -42,11 +63,25 @@ class DatabaseModel with ChangeNotifier {
     return trainer != null ? AccountType.trainer : AccountType.none;
   }
 
+  /// Saves the edited fields of the signed-in profile and reloads it.
+  Future<void> updateProfile(Map<String, String> changes) async {
+    final current = profile;
+    if (current == null || changes.isEmpty) return;
+    await _service.updateProfile(current, changes);
+    if (current is Trainer) {
+      trainer = await _service.getTrainer(current.id) ?? current;
+    } else {
+      user = await _service.getUser(current.id) ?? user;
+    }
+    notifyListeners();
+  }
+
   /// Forgets the loaded profile, e.g. on logout.
   void clear() {
     user = null;
     trainer = null;
     trainersList = [];
+    trainersError = null;
     notifyListeners();
   }
 

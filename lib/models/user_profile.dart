@@ -1,16 +1,25 @@
 import 'package:dab_fitness/models/json_helpers.dart';
+import 'package:dab_fitness/models/profile.dart';
 
 /// A client account, stored at `users/{uid}`.
-class UserProfile {
+class UserProfile extends Profile {
+  @override
   final String name;
+  @override
   final String email;
+  @override
   final String number;
+  @override
   final String gender;
   final String userId;
+  @override
   final String address;
 
   /// ISO-8601 time the profile was created (the legacy `DateTime` field).
   final String createdAt;
+
+  @override
+  String get id => userId;
 
   UserProfile({
     required this.name,

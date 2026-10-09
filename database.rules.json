@@ -41,7 +41,15 @@
     "liveClass": {
       ".read": "auth != null",
       "$uid": {
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null && auth.uid === $uid",
+        "$classId": {
+          "attendees": {
+            "$attendee": {
+              ".write": "auth != null && auth.uid === $attendee",
+              ".validate": "newData.val() === true"
+            }
+          }
+        }
       }
     }
   }

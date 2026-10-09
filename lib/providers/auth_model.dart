@@ -20,6 +20,9 @@ class AuthModel with ChangeNotifier {
 
   String? get userId => _userId;
 
+  /// Email of the signed-in account, or null.
+  String? get email => _userId == null ? null : _service.currentEmail;
+
   /// The uid of the session restored from the last app run, or null.
   /// Completes once Firebase has finished checking.
   Future<String?> restoreSession() => _service.userIdChanges.first;

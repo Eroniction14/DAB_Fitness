@@ -8,6 +8,7 @@ import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/screens/trainers/trainer_detail_page.dart';
 import 'package:dab_fitness/services/location_service.dart';
+import 'package:dab_fitness/widgets/refreshable_list.dart';
 
 class TrainerListPage extends StatefulWidget {
   static const routeName = '/trainerpage';
@@ -26,6 +27,17 @@ class _TrainerListPageState extends State<TrainerListPage> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _refresh() async {
+    final database = context.read<DatabaseModel>();
+    final messenger = ScaffoldMessenger.of(context);
+    await database.loadTrainers();
+    if (database.trainersError != null) {
+      messenger.showSnackBar(const SnackBar(
+        content: Text("Couldn't refresh. Showing the last loaded trainers."),
+      ));
+    }
   }
 
   Future<void> _book(Trainer trainer) async {
@@ -69,13 +81,22 @@ class _TrainerListPageState extends State<TrainerListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final args = ModalRoute.of(context)!.settings.arguments as List?;
-    final trainers = args?.cast<Trainer>() ?? const <Trainer>[];
+    final database = context.watch<DatabaseModel>();
+    final trainers = database.getTrainersData;
 
     if (trainers.isEmpty) {
+      // Loading, error or empty: a pull-to-refreshable message.
       return Scaffold(
-        appBar: AppBar(),
-        body: const Center(child: Text("No trainers are available yet")),
+        appBar: AppBar(title: const Text('Trainers')),
+        body: RefreshableList<Trainer>(
+          items: const [],
+          isLoading: database.trainersLoading,
+          error: database.trainersError,
+          onRefresh: database.loadTrainers,
+          emptyMessage: "No trainers are available yet.\nPull to refresh.",
+          emptyIcon: Icons.person_search,
+          itemBuilder: (_, __) => const SizedBox.shrink(),
+        ),
       );
     }
     final current = trainers[_index.clamp(0, trainers.length - 1)];
@@ -86,6 +107,21 @@ class _TrainerListPageState extends State<TrainerListPage> {
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          // The carousel scrolls sideways, so refresh is a button here.
+          IconButton(
+            tooltip: 'Refresh trainers',
+            icon: database.trainersLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Icons.refresh),
+            onPressed: database.trainersLoading ? null : _refresh,
+          ),
+        ],
       ),
       body: Stack(
         children: [

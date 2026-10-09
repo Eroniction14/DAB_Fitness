@@ -1,4 +1,5 @@
-import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'dart:async';
+
 import 'package:card_swiper/card_swiper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -7,11 +8,11 @@ import 'package:dab_fitness/data/workout_data.dart';
 import 'package:dab_fitness/models/live_class.dart';
 import 'package:dab_fitness/models/workout.dart';
 import 'package:dab_fitness/providers/booking_model.dart';
-import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/screens/live_class/call_page.dart';
 import 'package:dab_fitness/screens/trainers/trainer_list_page.dart';
 import 'package:dab_fitness/screens/training/video_detail_page.dart';
 import 'package:dab_fitness/widgets/app_bar_widget.dart';
+import 'package:dab_fitness/widgets/refreshable_list.dart';
 
 class TrainingPage extends StatefulWidget {
   static const routeName = '/trainingPage';
@@ -24,28 +25,31 @@ class TrainingPage extends StatefulWidget {
 class _TrainingPageState extends State<TrainingPage> {
   final PageController _pageController = PageController();
   int _activePage = 0;
-  bool _isInit = true;
-  bool _isLoading = false;
+  late Stream<List<LiveClass>> _classes;
+  Timer? _ticker;
 
   static const _tabs = ["In-Person", "Videos", "Online Classes"];
 
   @override
+  void initState() {
+    super.initState();
+    _classes = context.read<BookingModel>().watchLiveClasses();
+    // Re-filter once a minute so classes disappear when they end.
+    _ticker = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
   void dispose() {
+    _ticker?.cancel();
     _pageController.dispose();
     super.dispose();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isInit) return;
-    _isInit = false;
-    _isLoading = true;
-    context.read<BookingModel>().loadLiveClass().catchError((e) {
-      debugPrint('Failed to load live classes: $e');
-    }).whenComplete(() {
-      if (mounted) setState(() => _isLoading = false);
-    });
+  /// Pull-to-refresh / Retry on Online Classes: re-subscribe.
+  Future<void> _refreshClasses() async {
+    setState(() => _classes = context.read<BookingModel>().watchLiveClasses());
   }
 
   void _goToPage(int index) {
@@ -56,25 +60,8 @@ class _TrainingPageState extends State<TrainingPage> {
     );
   }
 
-  Future<void> _onJoin(String channelName) async {
-    if (channelName.isEmpty) return;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CallPage(
-          channelName: channelName,
-          role: ClientRoleType.clientRoleAudience,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final liveClasses = context.watch<BookingModel>().getLiveClass;
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
     return Scaffold(
       body: Container(
         margin: const EdgeInsets.symmetric(horizontal: 5),
@@ -89,7 +76,7 @@ class _TrainingPageState extends State<TrainingPage> {
                 children: [
                   _inPersonPage(),
                   _videosPage(),
-                  _onlineClassesPage(liveClasses),
+                  _onlineClassesPage(),
                 ],
               ),
             ),
@@ -163,10 +150,8 @@ class _TrainingPageState extends State<TrainingPage> {
   }
 
   Widget _workoutCard(WorkoutCategory data) {
-    final trainers = context.read<DatabaseModel>().getTrainersData;
     return InkWell(
-      onTap: () => Navigator.of(context)
-          .pushNamed(TrainerListPage.routeName, arguments: trainers),
+      onTap: () => Navigator.of(context).pushNamed(TrainerListPage.routeName),
       child: Card(
         margin: const EdgeInsets.all(10),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -274,22 +259,22 @@ class _TrainingPageState extends State<TrainingPage> {
 
   // ---------- Page 3: Online live classes ----------
 
-  Widget _onlineClassesPage(List<LiveClass> liveClasses) {
-    if (liveClasses.isEmpty) {
-      return Center(
-        child: Text("No live classes are available",
-            style: Theme.of(context).textTheme.displaySmall),
-      );
-    }
-    return ListView.builder(
-      itemCount: liveClasses.length,
-      itemBuilder: (context, index) {
-        final liveClass = liveClasses[index];
-        return _LiveClassCard(
+  Widget _onlineClassesPage() {
+    return StreamBuilder<List<LiveClass>>(
+      stream: _classes,
+      builder: (context, snapshot) => RefreshableList<LiveClass>(
+        items: upcomingClasses(snapshot.data ?? const [], DateTime.now()),
+        isLoading: !snapshot.hasData && !snapshot.hasError,
+        error: snapshot.error,
+        onRefresh: _refreshClasses,
+        emptyMessage: "No upcoming live classes right now.\nPull to refresh.",
+        emptyIcon: Icons.live_tv,
+        itemBuilder: (context, liveClass) => _LiveClassCard(
+          key: ValueKey(liveClass.key),
           data: liveClass,
-          onJoin: () => _onJoin(liveClass.channelName),
-        );
-      },
+          onJoin: () => openLiveClass(context, liveClass, asHost: false),
+        ),
+      ),
     );
   }
 }
@@ -298,7 +283,7 @@ class _TrainingPageState extends State<TrainingPage> {
 class _LiveClassCard extends StatefulWidget {
   final LiveClass data;
   final VoidCallback onJoin;
-  const _LiveClassCard({required this.data, required this.onJoin});
+  const _LiveClassCard({super.key, required this.data, required this.onJoin});
 
   @override
   State<_LiveClassCard> createState() => _LiveClassCardState();
@@ -370,7 +355,9 @@ class _LiveClassCardState extends State<_LiveClassCard> {
                           const Icon(Icons.access_time, color: Colors.white),
                           const SizedBox(width: 12),
                           Flexible(
-                            child: Text("${data.date}, ${data.time}",
+                            child: Text(
+                                "${data.date}, ${data.time}"
+                                " (${data.durationMinutes} min)",
                                 style: text.displayMedium),
                           ),
                         ],
@@ -380,7 +367,7 @@ class _LiveClassCardState extends State<_LiveClassCard> {
                         children: [
                           const Icon(Icons.account_circle, color: Colors.white),
                           const SizedBox(width: 12),
-                          Text("${data.participants} attendees",
+                          Text("${data.participants} watching",
                               style: text.displayMedium),
                         ],
                       ),

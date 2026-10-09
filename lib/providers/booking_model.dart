@@ -24,10 +24,19 @@ class BookingModel with ChangeNotifier {
   final DatabaseService _service;
 
   List<Booking> bookings = [];
-  List<LiveClass> liveClass = [];
+
+  bool _bookingsLoading = false;
+
+  /// True while bookings are being (re)loaded, or before the first load.
+  bool get bookingsLoading => _bookingsLoading || _lastBookingsLoad == null;
+
+  /// The error from the last failed load, or null.
+  Object? bookingsError;
+
+  /// Re-runs whichever of [loadMyAppoinments] / [getMyAppoinments] ran last.
+  Future<void> Function()? _lastBookingsLoad;
 
   List<Booking> get getAppoinments => bookings;
-  List<LiveClass> get getLiveClass => liveClass;
 
   /// User books a trainer. Saved under both the user and the trainer.
   /// Throws [BookingException] if the time has passed or is already taken.
@@ -58,45 +67,75 @@ class BookingModel with ChangeNotifier {
   }
 
   /// Trainer: bookings made with me.
-  Future<void> getMyAppoinments() async {
-    bookings = await _service.getTrainerBookings(userId!);
-    notifyListeners();
-  }
+  Future<void> getMyAppoinments() =>
+      _loadBookings(getMyAppoinments, _service.getTrainerBookings);
 
   /// User: bookings I made.
-  Future<void> loadMyAppoinments() async {
-    bookings = await _service.getUserBookings(userId!);
+  Future<void> loadMyAppoinments() =>
+      _loadBookings(loadMyAppoinments, _service.getUserBookings);
+
+  /// Reloads the bookings list (pull-to-refresh, Retry).
+  Future<void> refreshBookings() => _lastBookingsLoad?.call() ?? Future.value();
+
+  /// Errors are kept in [bookingsError] rather than thrown.
+  Future<void> _loadBookings(Future<void> Function() self,
+      Future<List<Booking>> Function(String uid) load) async {
+    _lastBookingsLoad = self;
+    final uid = userId;
+    if (uid == null) return;
+    _bookingsLoading = true;
     notifyListeners();
+    try {
+      bookings = await load(uid);
+      bookingsError = null;
+    } catch (e) {
+      debugPrint('Loading bookings failed: $e');
+      bookingsError = e;
+    } finally {
+      _bookingsLoading = false;
+      notifyListeners();
+    }
   }
 
+  // ---------- Live classes ----------
+
   /// Trainer schedules a live class. The channel name is the trainer's id.
-  Future<List<LiveClass>> startLiveClass(
-      dynamic date, dynamic time, dynamic name, dynamic title) async {
+  /// Throws [BookingException] if the start time has passed.
+  Future<void> startLiveClass(dynamic date, dynamic time, dynamic name,
+      dynamic title, int durationMinutes) async {
     final entry = LiveClass(
       date: jsonString(date),
       time: _formatTime(time),
       trainerId: userId!,
       name: jsonString(name),
       title: jsonString(title),
+      durationMinutes: durationMinutes,
       participants: 0,
       channelName: userId!,
       image: LiveClass.defaultImage,
     );
+    final startsAt = entry.startsAt;
+    if (startsAt == null || !startsAt.isAfter(DateTime.now())) {
+      throw const BookingException('That time has already passed.');
+    }
     await _service.addLiveClass(entry);
-    liveClass.add(entry);
-    notifyListeners();
-    return liveClass;
   }
 
-  /// User: every trainer's live classes.
-  Future<void> loadLiveClass() async {
-    liveClass = await _service.getAllLiveClasses();
-    notifyListeners();
-  }
+  /// Live classes, updated live: every trainer's, or only mine if
+  /// [mine] is true (trainer). Includes finished classes; filter with
+  /// `upcomingClasses`.
+  Stream<List<LiveClass>> watchLiveClasses({bool mine = false}) => mine
+      ? _service.watchTrainerLiveClasses(userId!)
+      : _service.watchAllLiveClasses();
 
-  /// Trainer: my own live classes.
-  Future<void> loadLiveClassTrainer() async {
-    liveClass = await _service.getTrainerLiveClasses(userId!);
-    notifyListeners();
-  }
+  Stream<LiveClass?> watchLiveClass(LiveClass liveClass) =>
+      _service.watchLiveClass(liveClass.trainerId, liveClass.key);
+
+  /// Counts me as attending [liveClass] until [leaveLiveClass] or until the
+  /// connection drops.
+  Future<void> joinLiveClass(LiveClass liveClass) =>
+      _service.joinLiveClass(liveClass, userId!);
+
+  Future<void> leaveLiveClass(LiveClass liveClass) =>
+      _service.leaveLiveClass(liveClass, userId!);
 }

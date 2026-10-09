@@ -18,9 +18,10 @@ class _EmptyDatabase extends DatabaseService {
   @override
   Future<List<Booking>> getUserBookings(String userId) async => [];
   @override
-  Future<List<LiveClass>> getTrainerLiveClasses(String trainerId) async => [];
+  Stream<List<LiveClass>> watchTrainerLiveClasses(String trainerId) =>
+      Stream.value(const []);
   @override
-  Future<List<LiveClass>> getAllLiveClasses() async => [];
+  Stream<List<LiveClass>> watchAllLiveClasses() => Stream.value(const []);
 }
 
 final _trainer = Trainer(
@@ -50,7 +51,9 @@ void _setScreen(WidgetTester tester, Size size) {
 }
 
 Widget _app(Widget child, {double textScale = 1}) {
-  final database = DatabaseModel(_EmptyDatabase())..trainer = _trainer;
+  final database = DatabaseModel(_EmptyDatabase())
+    ..trainer = _trainer
+    ..trainersList = [_trainer];
   return MultiProvider(
     providers: [
       ChangeNotifierProvider.value(value: database),
@@ -63,10 +66,7 @@ Widget _app(Widget child, {double textScale = 1}) {
         maxScaleFactor: textScale,
         child: page!,
       ),
-      onGenerateRoute: (_) => MaterialPageRoute(
-        settings: RouteSettings(arguments: [_trainer]),
-        builder: (_) => child,
-      ),
+      home: child,
     ),
   );
 }

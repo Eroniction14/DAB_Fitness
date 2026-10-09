@@ -62,7 +62,9 @@ trainerAppointments/{trainerUid}/{key}   same booking, same key (written in one 
 trainerSlots/{trainerUid}/{yyyy-MM-dd_HH:mm}   { userId, bookingKey }   double-booking lock,
                                      written/removed in the same multi-path update as the booking
 liveClass/{trainerUid}/{pushId}    { Date, Time, Id, user (trainer name), title,
-                                     participants, channelName, image }
+                                     participants (legacy, always 0), duration (minutes;
+                                     missing = 60), channelName, image,
+                                     attendees: { {userUid}: true } }
 ```
 
 Dates are `yyyy-MM-dd`, times are `HH:mm`. Field-name casing is inconsistent (legacy);
@@ -80,6 +82,11 @@ if you normalise it, migrate or read both spellings — do not silently break ex
   if it doesn't exist (this is what rejects double-booking), and deleted by the user who
   holds it or the trainer. Bookings made before Phase 3 have no lock (not backfilled).
 - liveClass: readable by any signed-in user; liveClass/$uid writable only by that uid.
+  liveClass/$uid/$classId/attendees/$attendee: each user may add (value `true`) or
+  remove only their own entry. The app adds it on joining a call with
+  `onDisconnect().remove()`, so the count self-heals if the app dies. Shown count =
+  attendees map size (falls back to `participants` for old classes).
+- A class is "over" at Date+Time+duration; past classes are hidden in the app.
 
 ## Secrets
 
@@ -123,7 +130,7 @@ Ask the user before deleting anything that is not listed here.
 - Session persistence; splash routes to the correct home if already signed in.
 - Typed models with fromJson/toJson. Secrets out of source (see above).
 
-### Phase 3 — Missing functionality (3a: cancellation, double-booking, trainer logout — DONE)
+### Phase 3 — Missing functionality — DONE (3a + 3b)
 - Real booking cancellation (user and trainer; remove both copies). Booking keys must
   be kept on the model.
 - Prevent double-booking the same trainer/date/time.
