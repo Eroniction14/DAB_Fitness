@@ -1,267 +1,200 @@
-import 'package:agora_flutter_quickstart/pages/trainerDetail_page.dart';
-import 'package:agora_flutter_quickstart/provider/booking_model.dart';
-import '../provider/database_model.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/rendering.dart';
-import 'package:snapclip_pageview/snapclip_pageview.dart';
-import 'package:date_time_picker/date_time_picker.dart';
-import 'package:location/location.dart';
-import 'package:geocoder/geocoder.dart';
-import 'package:flutter/services.dart';
+
+import '../provider/booking_model.dart';
+import '../provider/database_model.dart';
+import '../utils/location_helper.dart';
+import './trainerDetail_page.dart';
 
 class TrainerPage extends StatefulWidget {
   static const routeName = '/trainerpage';
+  const TrainerPage({super.key});
+
   @override
-  _TrainerPageState createState() => _TrainerPageState();
+  State<TrainerPage> createState() => _TrainerPageState();
 }
 
 class _TrainerPageState extends State<TrainerPage> {
-  List<Trainer> data;
-  TextEditingController _dateTimeController;
-  final GlobalKey<FormState> _formKey = GlobalKey();
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
-  String dateTime;
+  final _pageController = PageController(viewportFraction: 0.85);
+  int _index = 0;
+  String? _bookingFor; // trainerId currently being booked
+
   @override
-  void initState() {
-    super.initState();
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
-  Future<String> getUserLocation() async {
-    //call this async method from whereever you need
+  Future<void> _book(Trainer trainer) async {
+    final slot = await showDialog<BookingSlot>(
+      context: context,
+      builder: (_) => const BookingDialog(),
+    );
+    if (slot == null || !mounted) return;
 
-    LocationData myLocation;
-    String error;
-    Location location = new Location();
+    setState(() => _bookingFor = trainer.trainerId);
+    final booking = context.read<Booking>();
+    final userName = context.read<DataBase>().user?.name ?? '';
+    final messenger = ScaffoldMessenger.of(context);
+
     try {
-      myLocation = await location.getLocation();
-    } on PlatformException catch (e) {
-      if (e.code == 'PERMISSION_DENIED') {
-        error = 'please grant permission';
-        print(error);
-      }
-      if (e.code == 'PERMISSION_DENIED_NEVER_ASK') {
-        error = 'permission denied- please enable it from app settings';
-        print(error);
-      }
-      myLocation = null;
+      final city = await getCity();
+      final ok = await booking.book(
+        DateFormat('yyyy-MM-dd').format(slot.date),
+        slot.time,
+        city,
+        trainer.trainerId,
+        userName,
+      );
+      messenger.showSnackBar(SnackBar(
+        content: Text(ok
+            ? 'Session booked with ${trainer.name}!'
+            : 'Booking failed. Please try again.'),
+        duration: const Duration(seconds: 2),
+      ));
+    } catch (e) {
+      debugPrint('Booking failed: $e');
+      messenger.showSnackBar(const SnackBar(
+        content: Text('Could not connect. Check your internet connection.'),
+      ));
+    } finally {
+      if (mounted) setState(() => _bookingFor = null);
     }
-    final coordinates =
-        new Coordinates(myLocation.latitude, myLocation.longitude);
-    var addresses =
-        await Geocoder.local.findAddressesFromCoordinates(coordinates);
-    var first = addresses.first;
-    print(
-        ' ${first.locality}, ${first.adminArea},${first.subLocality}, ${first.subAdminArea},${first.addressLine}, ${first.featureName},${first.thoroughfare}, ${first.subThoroughfare}');
-    return first.locality.toString();
-  }
-
-  void _book(final trainerId, final name) {
-    print("book");
-    _formKey.currentState.save();
-    List<String> dateTimeSplit = dateTime.split(" ");
-    getUserLocation().then((value) {
-      Provider.of<Booking>(context, listen: false)
-          .book(dateTimeSplit[0], dateTimeSplit[1], value, trainerId, name)
-          .then((_) {
-        _scaffoldKey.currentState.showSnackBar(
-          SnackBar(
-            content: Text("Session Booked"),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        Navigator.of(context).pop();
-      });
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    data = ModalRoute.of(context).settings.arguments as List;
-    return data.isEmpty
-        ? Scaffold(body: Center(child: Text("No trainers are available")))
-        : Scaffold(
-            key: _scaffoldKey,
-            extendBodyBehindAppBar: true,
-            appBar: AppBar(
-              backgroundColor: Color(0x00000000),
-              elevation: 0,
-            ),
-            body: Builder(
-              builder: (context) => SnapClipPageView(
-                backgroundBuilder: buildBackground,
-                itemBuilder: buildChild,
-                length: data.length,
-                initialIndex: 0,
+    final args = ModalRoute.of(context)!.settings.arguments as List?;
+    final trainers = args?.cast<Trainer>() ?? const <Trainer>[];
+
+    if (trainers.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: Text("No trainers are available yet")),
+      );
+    }
+    final current = trainers[_index.clamp(0, trainers.length - 1)];
+
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Stack(
+        children: [
+          // Full-screen photo of the current trainer, cross-fading on swipe.
+          Positioned.fill(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              layoutBuilder: (currentChild, previous) => Stack(
+                fit: StackFit.expand,
+                children: [...previous, if (currentChild != null) currentChild],
+              ),
+              child: Image.asset(
+                current.image,
+                key: ValueKey(current.trainerId),
+                fit: BoxFit.cover,
               ),
             ),
-          );
-  }
-
-  BackgroundWidget buildBackground(_, index) {
-    final trainer = data[index];
-    return BackgroundWidget(
-      key: Key(index.toString()),
-      child: Image.asset(trainer.image, fit: BoxFit.fill),
-      index: index,
+          ),
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.black26, Colors.black87],
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: SizedBox(
+                height: 440,
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: trainers.length,
+                  onPageChanged: (i) => setState(() => _index = i),
+                  itemBuilder: (context, i) => _trainerCard(trainers[i]),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  PageViewItem buildChild(_, int index) {
-    final trainer = data[index];
-    final user = Provider.of<DataBase>(context, listen: false).getUser;
-    return PageViewItem(
-      alignment: Alignment.bottomCenter,
-      key: Key(index.toString()),
-      child: Container(
-        height: 300,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(
-              trainer.name,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(
-              height: 6,
-            ),
-            GestureDetector(
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => TrainerDetail(trainer),
-                ),
-              ),
-              child: Container(
-                height: 200,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(25),
-                  child: Image.asset(
-                    trainer.image,
-                    fit: BoxFit.fill,
+  Widget _trainerCard(Trainer trainer) {
+    final isBooking = _bookingFor == trainer.trainerId;
+    const bold20 = TextStyle(fontSize: 20, fontWeight: FontWeight.bold);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 24),
+      child: Card(
+        elevation: 8,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(trainer.name, textAlign: TextAlign.center, style: bold20),
+              const SizedBox(height: 8),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => TrainerDetail(trainer)),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.asset(trainer.image, fit: BoxFit.cover),
                   ),
                 ),
               ),
-            ),
-            SizedBox(
-              height: 13,
-            ),
-            Text(
-              "Age: ${trainer.age}",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 12),
+              Text("Age: ${trainer.age}", style: bold20),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Text("Rating: ", style: bold20),
+                  for (int i = 0; i < 5; i++)
+                    Icon(i < trainer.rating ? Icons.star : Icons.star_border,
+                        color: Colors.amber),
+                ],
               ),
-            ),
-            ratingBar(trainer.rating),
-            Divider(),
-            RaisedButton(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20.0),
-              ),
-              onPressed: () => showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return Dialog(
+              const Divider(height: 20),
+              SizedBox(
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: isBooking ? null : () => _book(trainer),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1BC0C5),
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20.0),
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: Container(
-                        height: 200,
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              buildDateTimePicker(),
-                              SizedBox(
-                                width: 320.0,
-                                child: RaisedButton(
-                                  onPressed: () =>
-                                      _book(trainer.trainerId, user.name),
-                                  child: Text(
-                                    "Book",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                  color: const Color(0xFF1BC0C5),
-                                ),
-                              )
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
+                        borderRadius: BorderRadius.circular(20)),
+                  ),
+                  child: isBooking
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2.5, color: Colors.white),
+                        )
+                      : const Text("BOOK NOW",
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600)),
+                ),
               ),
-              child: Text("BOOK NOW"),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-      height: 405,
-      index: index,
-      //margin: EdgeInsets.all(10),
-    );
-  }
-
-  Widget ratingBar(int rating) {
-    List<Widget> stars = [
-      Text(
-        "Rating: ",
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ];
-    for (int i = 0; i < 5; i++) {
-      if (i <= rating)
-        stars.add(Icon(
-          Icons.star,
-          color: Colors.yellow,
-        ));
-      else
-        stars.add(Icon(Icons.star_border));
-    }
-    return Container(
-      child: Row(
-        children: stars,
-      ),
-    );
-  }
-
-  Widget buildDateTimePicker() {
-    return DateTimePicker(
-      type: DateTimePickerType.dateTimeSeparate,
-      dateMask: 'd MMM, yyyy',
-      initialValue: DateTime.now().toString(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      icon: Icon(Icons.event),
-      dateLabelText: 'Date',
-      timeLabelText: "Hour",
-      controller: _dateTimeController,
-      selectableDayPredicate: (date) {
-        // Disable weekend days to select from the calendar
-        if (date.weekday == 7) {
-          return false;
-        }
-
-        return true;
-      },
-      onChanged: (val) => print("change" + val),
-      validator: (val) {
-        print("vali" + val);
-        return null;
-      },
-      onSaved: (val) => dateTime = val.toString(),
     );
   }
 }

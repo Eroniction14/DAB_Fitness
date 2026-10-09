@@ -21,9 +21,9 @@ class _TrainerDetailState extends State<TrainerDetail> {
   Trainer get trainer => widget.trainer;
 
   Future<void> _openBooking() async {
-    final slot = await showDialog<_BookingSlot>(
+    final slot = await showDialog<BookingSlot>(
       context: context,
-      builder: (_) => const _BookingDialog(),
+      builder: (_) => const BookingDialog(),
     );
     if (slot == null || !mounted) return;
 
@@ -203,20 +203,20 @@ class _TrainerDetailState extends State<TrainerDetail> {
 
 // ---------- "Pick a date and time" dialog ----------
 
-class _BookingSlot {
+class BookingSlot {
   final DateTime date;
   final TimeOfDay time;
-  const _BookingSlot(this.date, this.time);
+  const BookingSlot(this.date, this.time);
 }
 
-class _BookingDialog extends StatefulWidget {
-  const _BookingDialog();
+class BookingDialog extends StatefulWidget {
+  const BookingDialog();
 
   @override
-  State<_BookingDialog> createState() => _BookingDialogState();
+  State<BookingDialog> createState() => BookingDialogState();
 }
 
-class _BookingDialogState extends State<_BookingDialog> {
+class BookingDialogState extends State<BookingDialog> {
   DateTime? _date;
   TimeOfDay? _time;
   String? _error;
@@ -254,7 +254,7 @@ class _BookingDialogState extends State<_BookingDialog> {
       setState(() => _error = 'Pick a date and a time');
       return;
     }
-    Navigator.of(context).pop(_BookingSlot(_date!, _time!));
+    Navigator.of(context).pop(BookingSlot(_date!, _time!));
   }
 
   @override
