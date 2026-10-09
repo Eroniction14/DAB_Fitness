@@ -3,7 +3,7 @@ import 'package:card_swiper/card_swiper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../data.dart';
+import '../data.dart' hide LiveClass;
 import '../provider/booking_model.dart';
 import '../provider/database_model.dart';
 import '../widgets/appBar_widget.dart';
