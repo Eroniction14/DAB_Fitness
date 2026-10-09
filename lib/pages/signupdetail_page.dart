@@ -62,8 +62,8 @@ class _SignUpDetailState extends State<SignUpDetail> {
           await location.getLocation().timeout(const Duration(seconds: 10));
       if (here.latitude == null || here.longitude == null) return '';
 
-      final places =
-          await geo.placemarkFromCoordinates(here.latitude!, here.longitude!);
+      final places = await geo.Geocoding()
+          .placemarkFromCoordinates(here.latitude!, here.longitude!);
       return places.isEmpty ? '' : (places.first.locality ?? '');
     } catch (e) {
       debugPrint('Could not get location: $e');
