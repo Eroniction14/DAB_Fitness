@@ -65,3 +65,25 @@ class Auth with ChangeNotifier {
     notifyListeners();
   }
 }
+
+/// Turns Firebase Auth REST error codes into readable messages.
+String authErrorMessage(Map<String, dynamic> response) {
+  final code = (response['error']?['message'] ?? '').toString();
+  if (code.startsWith('EMAIL_EXISTS')) {
+    return 'An account with this email already exists.';
+  }
+  if (code.startsWith('INVALID_LOGIN_CREDENTIALS') ||
+      code.startsWith('INVALID_PASSWORD') ||
+      code.startsWith('EMAIL_NOT_FOUND')) {
+    return 'Incorrect email or password.';
+  }
+  if (code.startsWith('INVALID_EMAIL')) return 'That email address is not valid.';
+  if (code.startsWith('WEAK_PASSWORD')) {
+    return 'Password must be at least 6 characters.';
+  }
+  if (code.startsWith('TOO_MANY_ATTEMPTS')) {
+    return 'Too many attempts. Please try again later.';
+  }
+  if (code.startsWith('USER_DISABLED')) return 'This account has been disabled.';
+  return 'Something went wrong ($code).';
+}
