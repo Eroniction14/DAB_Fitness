@@ -3,16 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:dab_fitness/data/workout_data.dart';
-import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
-import 'package:dab_fitness/widgets/app_bar_widget.dart';
-import 'package:dab_fitness/widgets/booking_tile.dart';
-import 'package:dab_fitness/widgets/collapsible_sheet.dart';
-import 'package:dab_fitness/widgets/refreshable_list.dart';
 import 'package:dab_fitness/widgets/video_player_widget.dart';
 
 class HomePage extends StatefulWidget {
-  static const routeName = '/home';
   const HomePage({super.key});
 
   @override
@@ -20,50 +14,28 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePage extends State<HomePage> {
-  @override
-  void initState() {
-    super.initState();
-    // The Sessions sheet shows its own loading / error state. After the
-    // first frame, because loading notifies listeners straight away.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<BookingModel>().loadMyAppoinments();
-    });
-  }
+  /// "Good morning" / "Good afternoon" / "Good evening".
+  static String greeting(DateTime now) => now.hour < 12
+      ? 'Good morning'
+      : now.hour < 17
+          ? 'Good afternoon'
+          : 'Good evening';
 
   @override
   Widget build(BuildContext context) {
     final user = context.watch<DatabaseModel>().getUser;
+    final firstName = user.name.trim().split(' ').first;
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      extendBody: true,
-      body: Container(
-        margin: const EdgeInsets.all(10),
-        child: CustomScrollView(
-          slivers: [
-            MyAppbar("Hello, ${user.name}", "Home", true, user),
-            SliverFillRemaining(child: buildPage()),
-          ],
-        ),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar.large(
+            title: Text(firstName.isEmpty
+                ? greeting(DateTime.now())
+                : '${greeting(DateTime.now())}, $firstName'),
+          ),
+          SliverFillRemaining(child: buildPage()),
+        ],
       ),
-      bottomSheet: CollapsibleSheet(
-        title: "Sessions",
-        titleStyle: Theme.of(context).textTheme.titleMedium,
-        child: _sessionsList(),
-      ),
-    );
-  }
-
-  Widget _sessionsList() {
-    final booking = context.watch<BookingModel>();
-    return RefreshableList(
-      items: booking.getAppoinments,
-      isLoading: booking.bookingsLoading,
-      error: booking.bookingsError,
-      onRefresh: booking.refreshBookings,
-      emptyMessage: "No sessions booked yet.\nFind a trainer under Trainings.",
-      emptyIcon: Icons.event_available,
-      itemBuilder: (context, booking) =>
-          BookingTile(booking, key: ValueKey(booking.key)),
     );
   }
 
@@ -107,7 +79,7 @@ class _HomePage extends State<HomePage> {
                     ),
                   ),
                   child: Text("Trending",
-                      style: Theme.of(context).textTheme.headlineMedium),
+                      style: Theme.of(context).textTheme.titleLarge),
                 ),
               ),
             ],
@@ -161,7 +133,7 @@ class _HomePage extends State<HomePage> {
                       ),
                     ),
                     Text(workoutList[index].name,
-                        style: Theme.of(context).textTheme.displaySmall),
+                        style: Theme.of(context).textTheme.titleMedium),
                   ],
                 ),
               ),
@@ -178,7 +150,7 @@ class _HomePage extends State<HomePage> {
             child: Padding(
               padding: const EdgeInsets.all(10),
               child:
-                  Text(title, style: Theme.of(context).textTheme.displaySmall),
+                  Text(title, style: Theme.of(context).textTheme.titleMedium),
             ),
           ),
         ),
@@ -192,7 +164,7 @@ class _HomePage extends State<HomePage> {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 20),
-          child: Text(title, style: Theme.of(context).textTheme.headlineMedium),
+          child: Text(title, style: Theme.of(context).textTheme.titleLarge),
         ),
         Container(
           height: 500,
@@ -223,7 +195,7 @@ class _HomePage extends State<HomePage> {
                       Expanded(
                         child: Text(
                           workoutList[index].name,
-                          style: Theme.of(context).textTheme.displaySmall,
+                          style: Theme.of(context).textTheme.titleMedium,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),

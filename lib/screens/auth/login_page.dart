@@ -6,8 +6,8 @@ import 'package:dab_fitness/providers/auth_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/screens/auth/signup_detail_page.dart';
 import 'package:dab_fitness/screens/auth/signup_page.dart';
-import 'package:dab_fitness/screens/home/home_page.dart';
-import 'package:dab_fitness/screens/trainer_home/trainer_home_page.dart';
+import 'package:dab_fitness/screens/shell/user_shell.dart';
+import 'package:dab_fitness/screens/shell/trainer_shell.dart';
 import 'package:dab_fitness/services/auth_service.dart';
 import 'package:dab_fitness/widgets/fade_animation.dart';
 
@@ -49,9 +49,9 @@ class _LoginPageState extends State<LoginPage> {
       final account = await database.loadData(uid);
       switch (account) {
         case AccountType.user:
-          navigator.pushReplacementNamed(HomePage.routeName);
+          navigator.pushReplacementNamed(UserShell.routeName);
         case AccountType.trainer:
-          navigator.pushReplacementNamed(TrainerHomePage.routeName);
+          navigator.pushReplacementNamed(TrainerShell.routeName);
         case AccountType.none:
           // Sign-up never saved a profile: finish it.
           navigator.pushReplacement(

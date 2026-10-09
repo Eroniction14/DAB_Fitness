@@ -93,8 +93,9 @@ class _TrainerListPageState extends State<TrainerListPage> {
           isLoading: database.trainersLoading,
           error: database.trainersError,
           onRefresh: database.loadTrainers,
-          emptyMessage: "No trainers are available yet.\nPull to refresh.",
-          emptyIcon: Icons.person_search,
+          emptyTitle: 'No trainers yet',
+          emptyHint: 'Pull down to check again.',
+          emptyIcon: Icons.person_search_outlined,
           itemBuilder: (_, __) => const SizedBox.shrink(),
         ),
       );

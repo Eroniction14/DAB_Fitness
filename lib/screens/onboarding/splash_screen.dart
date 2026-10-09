@@ -6,9 +6,9 @@ import 'package:provider/provider.dart';
 import 'package:dab_fitness/providers/auth_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/screens/auth/signup_detail_page.dart';
-import 'package:dab_fitness/screens/home/home_page.dart';
+import 'package:dab_fitness/screens/shell/user_shell.dart';
 import 'package:dab_fitness/screens/onboarding/launch_page.dart';
-import 'package:dab_fitness/screens/trainer_home/trainer_home_page.dart';
+import 'package:dab_fitness/screens/shell/trainer_shell.dart';
 
 /// Shows the logo, then routes to the right home if a session was restored,
 /// or to onboarding if not.
@@ -48,9 +48,9 @@ class _SplashScreenState extends State<SplashScreen> {
       final account = await database.loadData(uid).timeout(_loadTimeout);
       switch (account) {
         case AccountType.user:
-          navigator.pushReplacementNamed(HomePage.routeName);
+          navigator.pushReplacementNamed(UserShell.routeName);
         case AccountType.trainer:
-          navigator.pushReplacementNamed(TrainerHomePage.routeName);
+          navigator.pushReplacementNamed(TrainerShell.routeName);
         case AccountType.none:
           // Signed in, but sign-up never saved a profile: finish it.
           navigator.pushReplacement(

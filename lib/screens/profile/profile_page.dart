@@ -97,8 +97,8 @@ class _AppointmentsList extends StatelessWidget {
       isLoading: booking.bookingsLoading,
       error: booking.bookingsError,
       onRefresh: booking.refreshBookings,
-      emptyMessage: "No appointments scheduled",
-      emptyIcon: Icons.event_available,
+      emptyTitle: 'No appointments scheduled',
+      emptyIcon: Icons.event_available_outlined,
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemBuilder: (context, item) =>
           BookingTile(item, key: ValueKey(item.key)),

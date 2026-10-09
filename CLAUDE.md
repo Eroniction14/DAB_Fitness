@@ -98,6 +98,17 @@ Never commit real keys. (`firebase_options.dart` and `google-services.json` are 
 Older commits on `modernize` still contain the Agora App ID and the Firebase Web API key;
 rotate the Agora App ID before this history is ever published.
 
+## Design system (Phase 4, see DESIGN.md)
+
+- All colours, font sizes, radii and shadows live in `lib/config/theme.dart`
+  (`AppTheme.light/dark`, `AppColors` via `context.appColors`, `AppSpacing`, `AppRadius`).
+  `test/design_tokens_test.dart` fails on hard-coded values anywhere else in `lib/`.
+- Font: Plus Jakarta Sans, bundled in `assets/fonts/plus_jakarta_sans/` (OFL). No google_fonts.
+- Dark mode follows the system. `test/theme_test.dart` checks WCAG AA contrast for both themes.
+- Navigation: `UserShell` (`/home`: Home, Trainings, Bookings, Profile) and `TrainerShell`
+  (`/trainerHome`: Bookings, Classes, Profile). Shared widgets: `AppCard`, `EmptyState`,
+  `SkeletonList`, `InitialsAvatar`, `RefreshableList`.
+
 ## iOS
 
 `ios/` was regenerated in Phase 2 with `flutter create --platforms=ios` (bundle id

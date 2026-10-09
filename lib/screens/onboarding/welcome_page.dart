@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:dab_fitness/screens/auth/login_page.dart';
 import 'package:dab_fitness/screens/auth/signup_page.dart';
@@ -28,11 +27,7 @@ class WelcomePage extends StatelessWidget {
                       1,
                       Text(
                         "Welcome",
-                        style: GoogleFonts.openSans(
-                          color: Colors.black,
-                          fontSize: 35,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.displaySmall,
                       )),
                   SizedBox(
                     height: 20,

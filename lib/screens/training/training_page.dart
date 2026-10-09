@@ -4,6 +4,7 @@ import 'package:card_swiper/card_swiper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:dab_fitness/config/theme.dart';
 import 'package:dab_fitness/data/workout_data.dart';
 import 'package:dab_fitness/models/live_class.dart';
 import 'package:dab_fitness/models/workout.dart';
@@ -11,7 +12,6 @@ import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/screens/live_class/call_page.dart';
 import 'package:dab_fitness/screens/trainers/trainer_list_page.dart';
 import 'package:dab_fitness/screens/training/video_detail_page.dart';
-import 'package:dab_fitness/widgets/app_bar_widget.dart';
 import 'package:dab_fitness/widgets/refreshable_list.dart';
 
 class TrainingPage extends StatefulWidget {
@@ -67,7 +67,7 @@ class _TrainingPageState extends State<TrainingPage> {
         margin: const EdgeInsets.symmetric(horizontal: 5),
         child: CustomScrollView(
           slivers: [
-            MyAppbar("Choose your Way", "Trainings", false, null),
+            const SliverAppBar.large(title: Text('Trainings')),
             SliverToBoxAdapter(child: _pageIndicator()),
             SliverFillRemaining(
               child: PageView(
@@ -137,7 +137,7 @@ class _TrainingPageState extends State<TrainingPage> {
         Padding(
           padding: const EdgeInsets.only(left: 20),
           child: Text("Featured Workout Collections",
-              style: Theme.of(context).textTheme.headlineMedium),
+              style: Theme.of(context).textTheme.titleLarge),
         ),
         Padding(
           padding: const EdgeInsets.only(left: 20, bottom: 10),
@@ -162,11 +162,15 @@ class _TrainingPageState extends State<TrainingPage> {
             fit: StackFit.expand,
             children: [
               Image.asset(data.image, fit: BoxFit.cover),
+              DecoratedBox(
+                  decoration:
+                      BoxDecoration(gradient: context.appColors.photoScrim)),
               Positioned(
-                bottom: 10,
-                left: 10,
+                bottom: AppSpacing.lg,
+                left: AppSpacing.lg,
                 child: Text(data.name,
-                    style: Theme.of(context).textTheme.headlineSmall),
+                    style: context.textStyles.titleLarge
+                        ?.copyWith(color: context.appColors.onPhoto)),
               ),
             ],
           ),
@@ -198,8 +202,8 @@ class _TrainingPageState extends State<TrainingPage> {
         const SizedBox(height: 20),
         Padding(
           padding: const EdgeInsets.only(left: 8),
-          child: Text("What's New",
-              style: Theme.of(context).textTheme.headlineMedium),
+          child:
+              Text("What's New", style: Theme.of(context).textTheme.titleLarge),
         ),
         const SizedBox(height: 20),
         for (final video in offlineVideosData) _videoCard(video),
@@ -229,7 +233,7 @@ class _TrainingPageState extends State<TrainingPage> {
                 child: Padding(
                   padding: const EdgeInsets.only(left: 20, right: 10),
                   child: Text(data.category,
-                      style: Theme.of(context).textTheme.displaySmall),
+                      style: Theme.of(context).textTheme.titleMedium),
                 ),
               ),
               Expanded(
@@ -267,8 +271,9 @@ class _TrainingPageState extends State<TrainingPage> {
         isLoading: !snapshot.hasData && !snapshot.hasError,
         error: snapshot.error,
         onRefresh: _refreshClasses,
-        emptyMessage: "No upcoming live classes right now.\nPull to refresh.",
-        emptyIcon: Icons.live_tv,
+        emptyTitle: 'No upcoming live classes',
+        emptyHint: 'Pull down to check again.',
+        emptyIcon: Icons.live_tv_outlined,
         itemBuilder: (context, liveClass) => _LiveClassCard(
           key: ValueKey(liveClass.key),
           data: liveClass,
@@ -296,6 +301,9 @@ class _LiveClassCardState extends State<_LiveClassCard> {
   Widget build(BuildContext context) {
     final data = widget.data;
     final text = Theme.of(context).textTheme;
+    final onPhoto = text.bodyLarge?.copyWith(color: context.appColors.onPhoto);
+    final onPhotoTitle =
+        text.titleLarge?.copyWith(color: context.appColors.onPhoto);
 
     return Card(
       margin: const EdgeInsets.all(10),
@@ -334,8 +342,8 @@ class _LiveClassCardState extends State<_LiveClassCard> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(data.title, style: text.headlineSmall),
-                              Text(data.name, style: text.displayMedium),
+                              Text(data.title, style: onPhotoTitle),
+                              Text(data.name, style: onPhoto),
                             ],
                           ),
                         ),
@@ -358,7 +366,7 @@ class _LiveClassCardState extends State<_LiveClassCard> {
                             child: Text(
                                 "${data.date}, ${data.time}"
                                 " (${data.durationMinutes} min)",
-                                style: text.displayMedium),
+                                style: onPhoto),
                           ),
                         ],
                       ),
@@ -367,8 +375,7 @@ class _LiveClassCardState extends State<_LiveClassCard> {
                         children: [
                           const Icon(Icons.account_circle, color: Colors.white),
                           const SizedBox(width: 12),
-                          Text("${data.participants} watching",
-                              style: text.displayMedium),
+                          Text("${data.participants} watching", style: onPhoto),
                         ],
                       ),
                       const SizedBox(height: 16),

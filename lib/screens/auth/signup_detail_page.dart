@@ -5,8 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:dab_fitness/providers/auth_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/screens/auth/logout.dart';
-import 'package:dab_fitness/screens/home/home_page.dart';
-import 'package:dab_fitness/screens/trainer_home/trainer_home_page.dart';
+import 'package:dab_fitness/screens/shell/user_shell.dart';
+import 'package:dab_fitness/screens/shell/trainer_shell.dart';
 import 'package:dab_fitness/services/auth_service.dart';
 import 'package:dab_fitness/services/location_service.dart';
 import 'package:dab_fitness/widgets/fade_animation.dart';
@@ -95,8 +95,8 @@ class _SignUpDetailState extends State<SignUpDetail> {
       final account = await database.loadData(uid);
       navigator.pushNamedAndRemoveUntil(
         account == AccountType.trainer
-            ? TrainerHomePage.routeName
-            : HomePage.routeName,
+            ? TrainerShell.routeName
+            : UserShell.routeName,
         (_) => false,
       );
     } catch (e) {
