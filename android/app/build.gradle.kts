@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.dabfitness.agora_flutter_quickstart"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
