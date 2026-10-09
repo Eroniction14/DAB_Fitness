@@ -1,114 +1,108 @@
-import 'package:agora_flutter_quickstart/widgets/videoplayer_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:shape_of_view/shape_of_view.dart';
+
+import '../widgets/videoplayer_widget.dart';
+
+/// Curves the bottom edge inward by [arcHeight] (replaces shape_of_view's ArcShape).
+class _BottomArcClipper extends CustomClipper<Path> {
+  final double arcHeight;
+  const _BottomArcClipper(this.arcHeight);
+
+  @override
+  Path getClip(Size size) {
+    return Path()
+      ..lineTo(0, size.height)
+      ..quadraticBezierTo(
+        size.width / 2, size.height - 2 * arcHeight, // dips arcHeight at centre
+        size.width, size.height,
+      )
+      ..lineTo(size.width, 0)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(_BottomArcClipper old) => old.arcHeight != arcHeight;
+}
 
 class VideoDetail extends StatelessWidget {
   static const routeName = '/videodetail';
+  const VideoDetail({super.key});
+
   @override
   Widget build(BuildContext context) {
-    final data = ModalRoute.of(context).settings.arguments as Map;
+    final data = ModalRoute.of(context)!.settings.arguments as Map;
+    const topCorners = BorderRadius.only(
+      topLeft: Radius.elliptical(300, 40),
+      topRight: Radius.elliptical(300, 40),
+    );
+
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Color(0x00000000),
-        elevation: 0,
-      ),
+      appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
       body: SingleChildScrollView(
-        child: Container(
+        child: SizedBox(
           height: 900,
           child: Stack(
             children: [
-              Container(
+              SizedBox(
                 height: 300,
                 width: double.infinity,
-                child: ShapeOfView(
+                child: PhysicalShape(
+                  clipper: const _BottomArcClipper(50),
                   elevation: 5,
-                  shape: ArcShape(
-                    position: ArcPosition.Bottom,
-                    direction: ArcDirection.Inside,
-                    height: 50,
-                  ),
-                  child: Image.asset(
-                    data['image'],
-                    fit: BoxFit.fill,
-                  ),
+                  color: Colors.white,
+                  child: Image.asset(data['image'], fit: BoxFit.fill),
                 ),
               ),
               Positioned(
                 top: 100,
                 left: 5,
+                right: 5,
                 child: Card(
-                  margin: const EdgeInsets.only(
-                    top: 150,
-                  ),
+                  margin: const EdgeInsets.only(top: 150),
                   elevation: 10,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.elliptical(300, 40),
-                      topRight: Radius.elliptical(300, 40),
-                    ),
-                  ),
-                  child: Container(
+                  shape: const RoundedRectangleBorder(borderRadius: topCorners),
+                  child: SizedBox(
                     height: 700,
-                    width: 400,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.elliptical(300, 40),
-                        topRight: Radius.elliptical(300, 40),
-                      ),
-                    ),
                     child: Column(
-                      //mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(
-                              top: 20, left: 20, right: 20),
+                              top: 30, left: 20, right: 20),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Padding(
-                                padding: const EdgeInsets.only(top: 10),
+                              Flexible(
                                 child: Text(
                                   data['category'],
-                                  style: TextStyle(
-                                    fontSize: 30,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: const TextStyle(
+                                      fontSize: 30,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: Text(
-                                  "30 mins",
-                                  style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.normal,
-                                      color: Colors.red),
-                                ),
+                              const Text(
+                                "30 mins",
+                                style:
+                                    TextStyle(fontSize: 20, color: Colors.red),
                               ),
                             ],
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10, left: 10),
+                        const Padding(
+                          padding: EdgeInsets.only(top: 10, left: 10),
                           child: Text(
                             "Perfect For Training Your Body And Endurance",
                             style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
+                                fontSize: 22, fontWeight: FontWeight.bold),
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.only(
-                              top: 10, left: 10, bottom: 10),
+                        const Padding(
+                          padding:
+                              EdgeInsets.only(top: 10, left: 10, bottom: 10),
                           child: Text(
                             "Programs",
                             style: TextStyle(
-                              fontSize: 25,
-                              fontWeight: FontWeight.bold,
-                            ),
+                                fontSize: 25, fontWeight: FontWeight.bold),
                           ),
                         ),
                         buildPrograms(data),
@@ -124,78 +118,55 @@ class VideoDetail extends StatelessWidget {
     );
   }
 
-  Widget buildPrograms(final data) {
+  Widget buildPrograms(Map data) {
+    final workouts = data['workouts'] as List;
     return Container(
       height: 440,
-      margin: const EdgeInsets.only(left: 10, right: 10),
-      //padding: const EdgeInsets.only(bottom: 10),
-      // color: Colors.blue,
+      margin: const EdgeInsets.symmetric(horizontal: 10),
       child: ListView.separated(
-        separatorBuilder: (context, index) => SizedBox(
-          height: 10,
-        ),
+        itemCount: workouts.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
+          final workout = workouts[index];
           return InkWell(
             onTap: () => showDialog(
               context: context,
-              builder: (BuildContext context) {
-                return Dialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20.0),
-                  ),
-                  child: VideoPlayerApp(data["workouts"][index].videos),
-                );
-              },
+              builder: (_) => Dialog(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+                child: VideoPlayerApp(workout.videos),
+              ),
             ),
             child: Card(
               elevation: 5,
-              child: Container(
-                margin: const EdgeInsets.all(10),
-                //width: 100,
+              child: Padding(
+                padding: const EdgeInsets.all(10),
                 child: Row(
                   children: [
                     Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
                       width: 100,
                       height: 100,
                       margin: const EdgeInsets.symmetric(vertical: 10),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: Image.asset(
-                          data["workouts"][index].image,
-                          fit: BoxFit.fill,
-                        ),
+                        child: Image.asset(workout.image, fit: BoxFit.fill),
                       ),
                     ),
-                    SizedBox(
-                      width: 10,
-                    ),
-                    Container(
-                      width: 144,
-                      height: 150,
+                    const SizedBox(width: 10),
+                    Expanded(
                       child: Text(
-                        data["workouts"][index].name,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        workout.name,
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                     ),
-                    SizedBox(
-                      width: 50,
-                    ),
-                    Icon(Icons.play_circle_outline),
+                    const Icon(Icons.play_circle_outline),
                   ],
                 ),
               ),
             ),
           );
         },
-        scrollDirection: Axis.vertical,
-        itemCount: data['workouts'].length,
-        //shrinkWrap: true,
       ),
     );
   }
