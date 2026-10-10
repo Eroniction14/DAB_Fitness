@@ -1,32 +1,149 @@
-# DAB_Fitness APP
+# DAB Fitness
 
-It is a fitness application for users to connect with fitness trainers through their electronic devices and continue their fitness schedule. It helps users to continue their exercise routines online and train with experienced professionals. Also gives a platform for the fitness trainers to connect live with users. It was developed using flutter as a frontend framework, firebase as the database and agora plugin for recording the video and google geolocation services for the location.
+DAB Fitness connects people with fitness trainers. Users browse trainers by
+category, book in-person sessions, follow workout videos and join live video
+classes. Trainers manage their bookings and host live classes from their phone.
 
+Built with Flutter, Firebase (Auth + Realtime Database) and Agora.
 
+<p>
+  <img src="docs/screenshots/light/08_home.png" width="200" alt="Home">
+  <img src="docs/screenshots/light/12_trainings_live.png" width="200" alt="Live classes">
+  <img src="docs/screenshots/light/13_trainer_list.png" width="200" alt="Trainer carousel">
+  <img src="docs/screenshots/light/16_bookings.png" width="200" alt="Bookings">
+</p>
 
+## Features
 
+**For users**
+- Sign up, log in (the session is remembered), reset a forgotten password.
+- Home: a greeting, your next session, top picks and five-minute workouts.
+- Trainings: pick a category to see matching trainers, watch workout videos,
+  or join a live class (classes that are on now show a **LIVE** badge and a
+  live "watching" count).
+- Book an in-person session. Times in the past and slots that are already
+  taken are refused.
+- Bookings grouped into Today, Upcoming and Past, with cancellation.
+- Profile with editing, and light and dark themes that follow the system.
 
-Below are the few screenshots of the application:
+**For trainers**
+- See and cancel the sessions clients have booked.
+- Schedule live classes (30/45/60/90 minutes) and host them as the broadcaster.
+- Pick a speciality from the same categories users browse, so they find you.
 
-![Welcome](https://user-images.githubusercontent.com/53464750/185146776-f50c60a5-7302-414a-ad45-3c092ae2a3dd.png)
-![SignUp](https://user-images.githubusercontent.com/53464750/185146978-a947dff6-6688-48ec-aa51-6af644e3088a.png)
-![Login](https://user-images.githubusercontent.com/53464750/185147034-acdb7893-02ca-4ca8-97d9-6294c2a12e79.png)
+## Screenshots
 
+| | | | |
+|---|---|---|---|
+| ![Onboarding](docs/screenshots/light/01_onboarding_1.png) | ![Welcome](docs/screenshots/light/05_welcome.png) | ![Login](docs/screenshots/light/06_login.png) | ![Sign up](docs/screenshots/light/07_signup.png) |
+| ![Home](docs/screenshots/light/08_home.png) | ![In person](docs/screenshots/light/10_trainings_in_person.png) | ![Videos](docs/screenshots/light/11_trainings_videos.png) | ![Live](docs/screenshots/light/12_trainings_live.png) |
+| ![Trainers](docs/screenshots/light/13_trainer_list.png) | ![Trainer detail](docs/screenshots/light/14_trainer_detail.png) | ![Booking](docs/screenshots/light/15_booking_sheet.png) | ![Profile](docs/screenshots/light/17_profile.png) |
 
+More in [`docs/screenshots/`](docs/screenshots/).
 
-![8](https://user-images.githubusercontent.com/53464750/185150507-a362af58-70bd-4ff8-a9cf-d03847976c63.jpeg)
-![5](https://user-images.githubusercontent.com/53464750/185148894-a1af5f90-2c4a-4aa7-9f3a-d8369ee7a3b3.jpeg)
+## Tech stack
 
-![Trainers](https://user-images.githubusercontent.com/53464750/185147512-5e423638-08dc-4de9-be4b-483b7fc27ea4.png)
-![TrainerDetails](https://user-images.githubusercontent.com/53464750/185147472-a4d00962-785c-47d1-b7c5-8f7a423db400.png)
-![Booking](https://user-images.githubusercontent.com/53464750/185147560-1400f68e-4de1-4a46-8ff1-e6774fe14a0b.png)
+| | |
+|---|---|
+| App | Flutter 3.47 / Dart 3.13, Material 3, `provider` for state |
+| Backend | Firebase Authentication (email/password), Firebase Realtime Database |
+| Video | Agora RTC (`agora_rtc_engine` 6.x): trainers broadcast, users watch |
+| Design | One design system in `lib/config/theme.dart`; Plus Jakarta Sans bundled |
+| Quality | `flutter analyze` clean; unit, widget, layout and accessibility tests; GitHub Actions |
 
-![4](https://user-images.githubusercontent.com/53464750/185149008-f5b0e185-37ad-472c-b358-1f0d10170a3f.jpeg)
-![9](https://user-images.githubusercontent.com/53464750/185148430-b567653b-1bca-4d6d-a824-f97dc3f6fbc6.jpeg)
-![10](https://user-images.githubusercontent.com/53464750/185151829-7ad16322-b835-4dd5-8bb7-4b45c8621264.jpg)
+```
+lib/
+  config/      theme, Agora config, onboarding strings
+  models/      UserProfile, Trainer, Booking, LiveClass, workouts (+ JSON)
+  services/    AuthService, DatabaseService (all Firebase access)
+  providers/   AuthModel, DatabaseModel, BookingModel (state for the UI)
+  screens/     onboarding, auth, shell (bottom navigation), home, training,
+               trainers, bookings, trainer_home, live_class, profile
+  widgets/     shared components (cards, lists, sheets, empty states, ...)
+  data/        bundled workout and category data
+```
 
-![7](https://user-images.githubusercontent.com/53464750/185151643-87bd16c9-c859-4df6-8c31-e91fc1bc12a4.jpg)
+## Getting started
 
-![3](https://user-images.githubusercontent.com/53464750/185149322-0c1be3b2-d913-46c8-b72b-cf239c4db8a4.jpeg)
+### 1. Prerequisites
+- Flutter 3.47 (stable) and an Android SDK with an emulator or device.
+  iOS is configured but hasn't been built yet; see "iOS" below.
 
+### 2. Firebase
+1. Create a Firebase project and enable **Authentication → Email/Password**
+   and the **Realtime Database**.
+2. Connect the app with the FlutterFire CLI:
+   ```bash
+   flutterfire configure --project=<your-project-id> --platforms=android,ios
+   ```
+   This writes `lib/firebase_options.dart` and `android/app/google-services.json`.
+3. Publish the security rules in [`database.rules.json`](database.rules.json),
+   either in the console or with:
+   ```bash
+   firebase deploy --only database
+   ```
 
+### 3. Agora (live classes)
+Create an Agora project in testing mode (App ID only), then:
+```bash
+cp config/env.example.json config/env.json
+```
+and put your App ID in `config/env.json`. That file is git-ignored; never
+commit real keys. Without it the app still runs, but live classes say the
+App ID is missing.
+
+### 4. Run
+```bash
+flutter run --dart-define-from-file=config/env.json
+```
+In VS Code, the **DAB Fitness (debug)** launch configuration adds the flag for you.
+
+### 5. Test
+```bash
+flutter analyze
+flutter test
+```
+CI runs the same checks (plus `dart format`) on every push and pull request;
+see [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+### iOS
+`ios/` was regenerated for Flutter 3.47 (iOS 15+), but hasn't been built on a
+Mac yet. To finish it there: run `pod install`, add `GoogleService-Info.plist`,
+and enable the camera, microphone and location permissions for
+`permission_handler` in the Podfile.
+
+## From 2021 to 2026
+
+DAB Fitness began in 2021 as a team project that won the **LICET Pattarai
+hackathon**. The original app is kept untouched on the `master` branch; it
+was written for pre-null-safety Flutter.
+
+In 2026 it was migrated and rebuilt, one phase at a time, with the app
+building and running after every step:
+
+1. **Migration.** Moved to Flutter 3.47 and Dart 3 null safety, replaced
+   discontinued packages, rewrote the video call page for Agora 6, and fixed
+   the Android build for current SDKs.
+2. **Structure.** Renamed the package to `dab_fitness`, adopted a
+   `config / models / services / providers / screens / widgets` layout, and
+   cleared every analyzer warning.
+3. **Firebase.** Replaced hand-written REST calls with the official
+   FlutterFire packages, added persistent login, typed models, and moved
+   secrets out of the source.
+4. **Missing features.** Real booking cancellation, double-booking
+   protection, trainer logout, profile editing, finishing an interrupted
+   sign-up, live class durations and attendee counts, and pull-to-refresh
+   with proper empty and error states everywhere.
+5. **Design.** A "clean and light" design system with dark mode, bottom
+   navigation for users and trainers, every screen restyled, a new app icon
+   and splash, and tests that enforce the design tokens, WCAG AA contrast and
+   48 px tap targets.
+
+## Credits
+
+- The 2021 original was built as a team project for the LICET Pattarai
+  hackathon, where it won.
+- The 2026 migration and rebuild is by **Eroniction Presley**.
+- [Plus Jakarta Sans](https://github.com/tokotype/PlusJakartaSans) is used
+  under the SIL Open Font License 1.1
+  (see `assets/fonts/plus_jakarta_sans/OFL.txt`).

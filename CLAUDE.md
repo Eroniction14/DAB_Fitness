@@ -118,6 +118,10 @@ rotate the Agora App ID before this history is ever published.
   flutter_launcher_icons makes to `ios/Runner.xcodeproj/project.pbxproj`
   (it wrongly sets ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = AppIcon).
 - Screenshots for the README live in `docs/screenshots/{light,dark}/`.
+- CI: `.github/workflows/ci.yml` (format, analyze, test with `config/env.example.json`).
+  Tests: models, providers (fake services), widgets, layout/accessibility, design tokens,
+  asset paths. README credits only Eroniction Presley for the 2026 rebuild; the 2021
+  team is described but not named.
 
 ## iOS
 
@@ -159,7 +163,7 @@ Ask the user before deleting anything that is not listed here.
 - Hide past live classes. Live participant count when joining/leaving a class.
 - Pull-to-refresh and proper empty/error states on every list.
 
-### Phase 4 — Polish
+### Phase 4 — Polish (4a, 4b, 4b polish, 4c done; dark-mode and trainer screenshots pending)
 - Central theme (colours, text styles) — remove scattered hard-coded styles.
 - Unit tests for models/providers; GitHub Actions running analyze + test.
 - README describing the app, setup steps, and the 2021 -> 2026 migration.

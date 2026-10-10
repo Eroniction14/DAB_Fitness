@@ -2,7 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:dab_fitness/models/booking.dart';
 import 'package:dab_fitness/data/workout_data.dart';
+import 'package:dab_fitness/models/json_helpers.dart';
 import 'package:dab_fitness/models/live_class.dart';
+import 'package:dab_fitness/models/trainer.dart';
+import 'package:dab_fitness/models/user_profile.dart';
 import 'package:dab_fitness/models/workout.dart';
 
 Map<String, dynamic> _classJson(
@@ -24,6 +27,7 @@ Map<String, dynamic> _classJson(
     };
 
 void main() {
+  profileTests();
   categoryTests();
   groupingTests();
 
@@ -203,6 +207,103 @@ void groupingTests() {
       final onlyFuture =
           groupBookings([_at('future', '2026-11-01', '10:00')], now);
       expect(onlyFuture.next?.key, 'future');
+    });
+  });
+}
+
+// ---------- Profiles and JSON helpers ----------
+
+void profileTests() {
+  group('UserProfile JSON', () {
+    test('reads both Email and legacy lower-case email', () {
+      expect(UserProfile.fromJson('u', {'Email': 'A@x.com'}).email, 'A@x.com');
+      expect(UserProfile.fromJson('u', {'email': 'b@x.com'}).email, 'b@x.com');
+    });
+
+    test('missing fields become empty strings, id comes from the key', () {
+      final u = UserProfile.fromJson('uid42', {});
+      expect((u.name, u.number, u.address, u.userId), ('', '', '', 'uid42'));
+    });
+
+    test('toJson writes the legacy field names and round-trips', () {
+      final json = {
+        'DateTime': '2026-01-01T00:00:00',
+        'Name': 'Jordan',
+        'Email': 'j@x.com',
+        'Number': '555',
+        'Gender': 'male',
+        'Address': 'City',
+        'Id': 'u1',
+      };
+      expect(UserProfile.fromJson('u1', json).toJson(), json);
+    });
+
+    test('editable fields are the ones the edit screen offers', () {
+      final u = UserProfile.fromJson('u', {'Name': 'J', 'Number': '1'});
+      expect(u.editableFields.keys, ['Name', 'Number', 'Gender', 'Address']);
+    });
+  });
+
+  group('Trainer JSON', () {
+    test('defaults the image, tolerates numbers stored as strings', () {
+      final t = Trainer.fromJson(
+          't1', {'Name': 'Alex', 'rating': '5', 'experience': 3.0, 'Age': 31});
+      expect(t.image, Trainer.defaultImage);
+      expect(t.rating, 5);
+      expect(t.experience, 3);
+      expect(t.age, '31');
+      expect(t.id, 't1');
+    });
+
+    test('toJson round-trips, including rating, Image and experience', () {
+      final json = {
+        'DateTime': '',
+        'Name': 'Alex',
+        'Email': 'a@x.com',
+        'Age': '30',
+        'Number': '1',
+        'Gender': 'female',
+        'Description': 'Coach',
+        'Speciality': 'Yoga',
+        'Address': 'City',
+        'Id': 't1',
+        'rating': 4,
+        'Image': 'assets/images/Daisy.jpg',
+        'experience': 7,
+      };
+      expect(Trainer.fromJson('t1', json).toJson(), json);
+    });
+
+    test('trainers can also edit age, speciality and description', () {
+      final t = Trainer.fromJson('t1', {});
+      expect(t.editableFields.keys,
+          containsAll(['Name', 'Age', 'Speciality', 'Description']));
+    });
+  });
+
+  group('JSON helpers', () {
+    test('asJsonMap stringifies keys and turns arrays into index maps', () {
+      expect(asJsonMap({1: 'a'}), {'1': 'a'});
+      expect(asJsonMap(['x', null, 'z']), {'0': 'x', '2': 'z'});
+      expect(asJsonMap('nope'), isNull);
+      expect(asJsonMap(null), isNull);
+    });
+
+    test('jsonChildEntries keeps keys and skips non-map children', () {
+      final entries = jsonChildEntries({
+        'a': {'Name': 'A'},
+        'b': 'not a map',
+        'c': {'Name': 'C'},
+      });
+      expect([for (final e in entries) e.key], ['a', 'c']);
+    });
+
+    test('jsonInt and jsonString are lenient', () {
+      expect(jsonInt('7'), 7);
+      expect(jsonInt(7.9), 7);
+      expect(jsonInt('x'), 0);
+      expect(jsonString(null), '');
+      expect(jsonString(12), '12');
     });
   });
 }
