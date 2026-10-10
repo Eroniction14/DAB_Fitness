@@ -17,6 +17,7 @@ import 'package:dab_fitness/screens/trainers/trainer_list_page.dart';
 import 'package:dab_fitness/services/auth_service.dart';
 import 'package:dab_fitness/services/database_service.dart';
 import 'package:dab_fitness/widgets/app_snackbar.dart';
+import 'package:dab_fitness/widgets/booking_tile.dart';
 
 Trainer _trainer(String id, String name, String speciality) => Trainer(
       name: name,
@@ -256,6 +257,40 @@ void main() {
         tester.widget<SnackBar>(find.byType(SnackBar)).backgroundColor, isNull,
         reason: 'neutral: the theme default');
     expect(find.byIcon(Icons.error_outline), findsNothing);
+  });
+
+  testWidgets('booking cards: the first line is the most prominent',
+      (tester) async {
+    final booking = Booking(
+        key: 'b',
+        date: '2099-01-05',
+        time: '09:30',
+        address: 'City',
+        trainerId: 't1',
+        userId: 'u1',
+        user: 'Jordan Lee');
+    // Both cards show some of the same text; the first match is the
+    // trainer card, which comes first.
+    double size(String text) =>
+        tester.widgetList<Text>(find.text(text)).first.style!.fontSize!;
+
+    await tester.pumpWidget(_app(Scaffold(
+      body: Column(children: [
+        // Trainer card: client name, then when.
+        BookingTile(booking, title: 'Jordan Lee', detail: bookingWhen(booking)),
+        // User card: when, then "With <trainer>".
+        BookingTile(booking, detail: 'With Alex Carter'),
+      ]),
+    )));
+    await tester.pump();
+
+    expect(size('Jordan Lee'), greaterThan(size(bookingWhen(booking))));
+    final userTitle = find.text(bookingWhen(booking));
+    expect(userTitle, findsNWidgets(2));
+    expect(size('With Alex Carter'),
+        lessThan(tester.widgetList<Text>(userTitle).last.style!.fontSize!));
+    expect(size('City'), lessThan(size('With Alex Carter')),
+        reason: 'location is the quietest line');
   });
 
   test('every Trainings category is a speciality choice', () {

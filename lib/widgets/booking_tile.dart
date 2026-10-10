@@ -102,8 +102,10 @@ class BookingTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // The title (client name, or the date for users) is the most
+                // prominent line: heading size, above the 16pt detail line.
                 Text(title ?? bookingWhen(booking),
-                    style: text.titleSmall,
+                    style: text.titleMedium,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),
                 if (detail != null) ...[
