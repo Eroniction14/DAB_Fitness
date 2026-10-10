@@ -3,42 +3,59 @@ import 'package:dab_fitness/models/workout.dart';
 const List<WorkoutCategory> workoutCategoryData = [
   WorkoutCategory(
     name: "Strength and Conditioning",
+    keywords: ['strength', 'conditioning', 's&c', 'powerlifting', 'crossfit'],
     image: "assets/images/Strength.jpg",
   ),
   WorkoutCategory(
     name: "Muscle Building",
+    keywords: [
+      'muscle',
+      'bodybuilding',
+      'hypertrophy',
+      'weight training',
+      'weightlifting'
+    ],
     image: "assets/images/Muscle.png",
   ),
   WorkoutCategory(
     name: "Rehab",
+    keywords: ['rehab', 'physio', 'recovery', 'injury', 'mobility'],
     image: "assets/images/rehab.jpg",
   ),
   WorkoutCategory(
     name: "Endurance",
+    keywords: ['endurance', 'cardio', 'running', 'marathon', 'stamina'],
     image: "assets/images/endurance.jpg",
   ),
   WorkoutCategory(
     name: "Agility",
+    keywords: ['agility'],
     image: "assets/images/agility.jpg",
   ),
   WorkoutCategory(
     name: "Speed",
+    keywords: ['speed', 'sprint'],
     image: "assets/images/speed.jpg",
   ),
   WorkoutCategory(
     name: "Pilates",
+    keywords: ['pilates'],
     image: "assets/images/Pilates.jpg",
   ),
   WorkoutCategory(
     name: "Yoga",
+    keywords: ['yoga'],
+    excludes: ['acro', 'aerial'],
     image: "assets/images/workout/Triangle_Pose.jpg",
   ),
   WorkoutCategory(
     name: "Acro Yoga",
+    keywords: ['acro'],
     image: "assets/images/acro-yoga.jpg",
   ),
   WorkoutCategory(
     name: "Aerial Yoga",
+    keywords: ['aerial'],
     image: "assets/images/aerial-yoga.jpg",
   ),
 ];
@@ -106,7 +123,7 @@ const List<VideoCategory> offlineVideosData = [
       ),
       Workout(
         name: "YTWL",
-        videos: "assest/sl_glute_bridge.mp4",
+        videos: "assets/sl_glute_bridge.mp4",
         reps: "10 each side",
         sets: 1,
         image: "assets/images/workout/ytwl.png",
@@ -408,7 +425,7 @@ const List<VideoCategory> offlineVideosData = [
           videos: "assets/butterfly_stretch.mp4",
           reps: "12-15",
           sets: 3,
-          image: "assets/images/workout/Chest_Fly.jpg",
+          image: "assets/images/workout/Chest_Fly.png",
           muscleGroupTargeted: "Pectoralis Major ",
         ),
       ]),
@@ -756,7 +773,7 @@ const List<VideoCategory> offlineVideosData = [
           videos: "assets/downward_dog.mp4",
           reps: "1 min",
           sets: 3,
-          image: "assets/images/Downward_Facing_Dog.jpg",
+          image: "assets/images/workout/Downward_Facing_Dog.jpg",
           muscleGroupTargeted:
               "Strengthens the Arms, Shoulders and Back while stretching the Hamstrings, Calves and Arches of your Feet",
         ),
@@ -765,7 +782,7 @@ const List<VideoCategory> offlineVideosData = [
           videos: "assets/plank2.mp4",
           reps: "1 min",
           sets: 3,
-          image: "assets/images/Plank_Pose.jpg",
+          image: "assets/images/workout/Plank_Pose.jpg",
           muscleGroupTargeted:
               "Helps build strength in the Core, Shoulders, Arms and Legs",
         ),
@@ -774,7 +791,7 @@ const List<VideoCategory> offlineVideosData = [
           videos: "assets/triangle_pose.mp4",
           reps: "1 min",
           sets: 3,
-          image: "assets/images/Four-Limbed_Staff_Pose.jpg",
+          image: "assets/images/workout/Four-Limbed_Staff_Pose.jpg",
           muscleGroupTargeted: "Abs, Glute, Shoulders, Tricep and Forearm",
         ),
         Workout(
@@ -782,7 +799,7 @@ const List<VideoCategory> offlineVideosData = [
           videos: "assets/push_ups.mp4",
           reps: "1 min",
           sets: 3,
-          image: "assets/images/Cobra_Pose.jpg",
+          image: "assets/images/workout/Cobra_Pose.jpg",
           muscleGroupTargeted:
               "Strengthen the Back Muscles, Increase Spinal Flexibility and Stretches the Chest, Shoulders and Abdomen",
         ),
@@ -791,7 +808,7 @@ const List<VideoCategory> offlineVideosData = [
           videos: "assets/triangle_pose.mp4",
           reps: "1 min",
           sets: 3,
-          image: "assets/images/tree.jpg",
+          image: "assets/images/workout/tree.jpg",
           muscleGroupTargeted:
               "Improve your balance, It can also strengthen your Core, Ankles, Calves, Thighs and Spine",
         ),
@@ -800,7 +817,7 @@ const List<VideoCategory> offlineVideosData = [
           videos: "assets/triangle_pose.mp4",
           reps: "1 min",
           sets: 3,
-          image: "assets/images/Triangle_Pose.jpg",
+          image: "assets/images/workout/Triangle_Pose.jpg",
           muscleGroupTargeted:
               "Build strength in the legs and stretches the Hips, Spine, Chest, Shoulders, Groins, Hamstrings and Calves",
         ),
@@ -809,7 +826,7 @@ const List<VideoCategory> offlineVideosData = [
           videos: "assets/downward_dog.mp4",
           reps: "1 min",
           sets: 3,
-          image: "assets/images/Seated_Half_Spinal_Twist_Pose.jpg",
+          image: "assets/images/workout/Seated_Half_Spinal_Twist_Pose.jpg",
           muscleGroupTargeted:
               "Increase the flexibility in your back, while stretching the Shoulders, Hips and Chest",
         ),
@@ -818,7 +835,7 @@ const List<VideoCategory> offlineVideosData = [
           videos: "assets/butterfly_stretch.mp4",
           reps: "1 min",
           sets: 3,
-          image: "assets/images/Bridge_Pose.jpg",
+          image: "assets/images/workout/Bridge_Pose.jpg",
           muscleGroupTargeted:
               "Stretches the muscles of the Chest, Back, Neck and also builds strength in the Back and Hamstring Muscles",
         ),
@@ -827,7 +844,7 @@ const List<VideoCategory> offlineVideosData = [
           videos: "assets/plank2.mp4",
           reps: "1 min",
           sets: 3,
-          image: "assets/images/Corpse_Pose.jpg",
+          image: "assets/images/workout/Corpse_Pose.jpg",
           muscleGroupTargeted: "Allows for a Moment of Relaxation",
         ),
       ]),
@@ -892,3 +909,16 @@ const List<Workout> workoutList = [
         "T-span, Scapula, Lat, Teres minor, Teres major and Trapezius",
   ),
 ];
+
+/// Category names, in Trainings order: the specialities a trainer can pick.
+final List<String> specialityChoices = [
+  for (final c in workoutCategoryData) c.name,
+];
+
+/// The category named [name], or null.
+WorkoutCategory? categoryNamed(String name) {
+  for (final c in workoutCategoryData) {
+    if (c.name == name) return c;
+  }
+  return null;
+}

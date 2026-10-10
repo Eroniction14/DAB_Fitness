@@ -6,6 +6,7 @@ import 'package:dab_fitness/config/theme.dart';
 import 'package:dab_fitness/models/booking.dart';
 import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/widgets/app_card.dart';
+import 'package:dab_fitness/widgets/app_snackbar.dart';
 
 /// "Mon, 12 Oct" for a booking's yyyy-MM-dd date (or the raw value).
 String friendlyDate(String date) {
@@ -43,26 +44,35 @@ Future<bool> confirmAndCancelBooking(
 
   try {
     await model.cancel(booking);
-    messenger.showSnackBar(const SnackBar(
-      content: Text('Session cancelled'),
-      duration: Duration(seconds: 2),
-    ));
+    messenger.showInfo('Session cancelled');
     return true;
   } catch (e) {
     debugPrint('Cancelling booking failed: $e');
-    messenger.showSnackBar(const SnackBar(
-      content: Text('Could not cancel. Check your connection and try again.'),
-    ));
+    messenger
+        .showError('Could not cancel. Check your connection and try again.');
     return false;
   }
 }
 
-/// A booked session: date, time and place, with a cancel action.
-/// [title] defaults to the date; trainers pass the client's name.
+/// "Mon, 12 Oct at 09:30" for a booking.
+String bookingWhen(Booking booking) =>
+    '${friendlyDate(booking.date)} at ${booking.time}';
+
+/// A booked session with a cancel action:
+///
+///   [title]            (defaults to the date and time)
+///   [detail]           e.g. "With Alex Carter", or the date for trainers
+///   location           on its own line, cut off with an ellipsis
+///
+/// [muted] dims past sessions.
 class BookingTile extends StatelessWidget {
   final Booking booking;
   final String? title;
-  const BookingTile(this.booking, {super.key, this.title});
+  final String? detail;
+  final bool muted;
+
+  const BookingTile(this.booking,
+      {super.key, this.title, this.detail, this.muted = false});
 
   @override
   Widget build(BuildContext context) {
@@ -70,18 +80,21 @@ class BookingTile extends StatelessWidget {
     final secondary = context.appColors.textSecondary;
     final scheme = context.colors;
 
+    // Past sessions ([muted]) tone down the icons only: dimming the text
+    // with opacity would break contrast.
     return AppCard(
       child: Row(
         children: [
           DecoratedBox(
             decoration: BoxDecoration(
-              color: scheme.primaryContainer,
+              color:
+                  muted ? context.appColors.inputFill : scheme.primaryContainer,
               borderRadius: AppRadius.inputAll,
             ),
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
-              child:
-                  Icon(Icons.event_outlined, color: scheme.onPrimaryContainer),
+              child: Icon(muted ? Icons.history : Icons.event_outlined,
+                  color: muted ? secondary : scheme.onPrimaryContainer),
             ),
           ),
           const SizedBox(width: AppSpacing.lg),
@@ -89,27 +102,41 @@ class BookingTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title ?? friendlyDate(booking.date),
-                    style: text.titleMedium,
+                Text(title ?? bookingWhen(booking),
+                    style: text.titleSmall,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  [
-                    if (title != null) friendlyDate(booking.date),
-                    booking.time,
-                    if (booking.address.isNotEmpty) booking.address,
-                  ].join(' · '),
-                  style: text.bodyMedium?.copyWith(color: secondary),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                if (detail != null) ...[
+                  const SizedBox(height: AppSpacing.xs / 2),
+                  Text(detail!,
+                      style: text.bodyMedium?.copyWith(color: secondary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                ],
+                if (booking.address.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xs / 2),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on_outlined,
+                          size: 16, color: secondary),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        child: Text(booking.address,
+                            style: text.bodySmall?.copyWith(color: secondary),
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
           IconButton(
-            tooltip: 'Cancel session',
-            icon: Icon(Icons.close_rounded, color: scheme.error),
+            tooltip: muted ? 'Remove session' : 'Cancel session',
+            icon: Icon(Icons.close_rounded,
+                color: muted ? secondary : scheme.error),
             onPressed: () => confirmAndCancelBooking(context, booking),
           ),
         ],

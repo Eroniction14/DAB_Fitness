@@ -32,8 +32,8 @@ class WorkoutTile extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: AppRadius.inputAll,
-            child: Image.asset(workout.image,
-                width: 72, height: 72, fit: BoxFit.cover),
+            child: SizedBox.square(
+                dimension: 72, child: WorkoutImage(workout.image)),
           ),
           const SizedBox(width: AppSpacing.lg),
           Expanded(
@@ -59,6 +59,56 @@ class WorkoutTile extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Icon(Icons.play_circle_outline, color: context.colors.primary),
         ],
+      ),
+    );
+  }
+}
+
+/// A workout photo on the neutral [AppColors.photoBackdrop]. Many workout
+/// images are cut-outs on white; multiplying onto the backdrop turns that
+/// white into a soft grey (and barely changes full photos), so every card
+/// looks alike in both themes.
+class WorkoutImage extends StatelessWidget {
+  final String asset;
+  const WorkoutImage(this.asset, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final backdrop = context.appColors.photoBackdrop;
+    return ColoredBox(
+      color: backdrop,
+      child: Image.asset(
+        asset,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        color: backdrop,
+        colorBlendMode: BlendMode.multiply,
+        excludeFromSemantics: true,
+        errorBuilder: (context, _, __) => Center(
+          child: Icon(Icons.fitness_center,
+              color: context.appColors.textSecondary),
+        ),
+      ),
+    );
+  }
+}
+
+/// A play icon on a translucent dark disc, visible on light and dark images.
+class PlayOverlay extends StatelessWidget {
+  final double size;
+  const PlayOverlay({super.key, this.size = 44});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return DecoratedBox(
+      decoration:
+          BoxDecoration(color: colors.photoChip, shape: BoxShape.circle),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: Icon(Icons.play_arrow_rounded,
+            size: size - AppSpacing.lg, color: colors.onPhoto),
       ),
     );
   }

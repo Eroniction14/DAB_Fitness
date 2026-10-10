@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:dab_fitness/config/theme.dart';
 import 'package:dab_fitness/providers/auth_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
+import 'package:dab_fitness/screens/auth/forgot_password_sheet.dart';
 import 'package:dab_fitness/screens/auth/signup_detail_page.dart';
 import 'package:dab_fitness/screens/auth/signup_page.dart';
 import 'package:dab_fitness/screens/shell/trainer_shell.dart';
@@ -11,6 +12,7 @@ import 'package:dab_fitness/screens/shell/user_shell.dart';
 import 'package:dab_fitness/services/auth_service.dart';
 import 'package:dab_fitness/widgets/auth_layout.dart';
 import 'package:dab_fitness/widgets/busy_button.dart';
+import 'package:dab_fitness/widgets/app_snackbar.dart';
 
 class LoginPage extends StatefulWidget {
   static const routeName = '/login';
@@ -22,14 +24,30 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
   String _email = '';
   String _password = '';
   bool _isLoading = false;
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _forgotPassword() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final sentTo = await showForgotPasswordSheet(context,
+        initialEmail: _emailController.text.trim());
+    if (sentTo != null) {
+      messenger.showInfo(
+          'If an account exists for $sentTo, a reset link is on its way. '
+          'Check your inbox and spam folder.');
+    }
+  }
+
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context).showError(message);
   }
 
   Future<void> _submit() async {
@@ -82,6 +100,7 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 TextFormField(
+                  controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.email],
@@ -102,7 +121,14 @@ class _LoginPageState extends State<LoginPage> {
                       : null,
                   onSaved: (value) => _password = value ?? '',
                 ),
-                const SizedBox(height: AppSpacing.xl),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _isLoading ? null : _forgotPassword,
+                    child: const Text('Forgot password?'),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
                 BusyFilledButton(
                     label: 'Log in', busy: _isLoading, onPressed: _submit),
               ],

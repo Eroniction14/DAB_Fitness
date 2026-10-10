@@ -11,6 +11,7 @@ import 'package:dab_fitness/config/theme.dart';
 import 'package:dab_fitness/models/live_class.dart';
 import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/widgets/info_chip.dart';
+import 'package:dab_fitness/widgets/app_snackbar.dart';
 
 /// Opens [liveClass]: the trainer as host (broadcaster, needs camera and
 /// microphone), everyone else as audience.
@@ -21,9 +22,8 @@ Future<void> openLiveClass(BuildContext context, LiveClass liveClass,
     final statuses = await [Permission.camera, Permission.microphone].request();
     if (!context.mounted) return;
     if (statuses.values.any((s) => !s.isGranted)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Camera and microphone access are needed to host.'),
-      ));
+      ScaffoldMessenger.of(context)
+          .showError('Camera and microphone access are needed to host.');
       return;
     }
   }

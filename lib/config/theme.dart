@@ -34,7 +34,12 @@ abstract final class AppTheme {
     final buttonShape =
         WidgetStatePropertyAll<OutlinedBorder>(const StadiumBorder());
     const buttonSize = WidgetStatePropertyAll(Size(64, 52));
-    final buttonText = WidgetStatePropertyAll(text.labelLarge);
+    // Button labels: 16 semibold, so they hold their own in 52px buttons.
+    final buttonLabel = text.labelLarge
+        ?.copyWith(fontSize: 16, fontWeight: FontWeight.w600, height: 1.25);
+    final buttonText = WidgetStatePropertyAll(buttonLabel);
+    // Text buttons are mostly inline links; they keep the label size.
+    final linkText = WidgetStatePropertyAll(text.labelLarge);
     const buttonPadding =
         WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: AppSpacing.xl));
 
@@ -92,7 +97,7 @@ abstract final class AppTheme {
         style: ButtonStyle(
           shape: buttonShape,
           minimumSize: const WidgetStatePropertyAll(Size(48, 48)),
-          textStyle: buttonText,
+          textStyle: linkText,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -108,7 +113,7 @@ abstract final class AppTheme {
         foregroundColor: scheme.onPrimary,
         elevation: 2,
         shape: const StadiumBorder(),
-        extendedTextStyle: text.labelLarge,
+        extendedTextStyle: buttonLabel,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -299,6 +304,11 @@ class AppColors extends ThemeExtension<AppColors> {
   /// backgrounds, so this stays white in dark mode too).
   final Color illustration;
 
+  /// Neutral backdrop behind workout images, many of which are cut-outs on
+  /// white: multiplying onto it turns white into a soft grey, so cut-outs
+  /// and full photos look alike. Same in both themes.
+  final Color photoBackdrop;
+
   /// The video call screen stays dark in both themes.
   final Color callBackground;
   final Color onCall;
@@ -324,6 +334,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.photoScrim,
     required this.photoChip,
     required this.illustration,
+    required this.photoBackdrop,
     required this.rating,
     required this.callBackground,
     required this.onCall,
@@ -354,6 +365,7 @@ class AppColors extends ThemeExtension<AppColors> {
     photoScrim: _scrim,
     photoChip: Color(0x8C000000),
     illustration: Color(0xFFFFFFFF),
+    photoBackdrop: Color(0xFFEDEFF2),
     rating: Color(0xFFF59E0B),
     callBackground: Color(0xFF000000),
     onCall: Color(0xFFFFFFFF),
@@ -377,6 +389,7 @@ class AppColors extends ThemeExtension<AppColors> {
     photoScrim: _scrim,
     photoChip: Color(0x8C000000),
     illustration: Color(0xFFFFFFFF),
+    photoBackdrop: Color(0xFFEDEFF2),
     rating: Color(0xFFFBBF24),
     callBackground: Color(0xFF000000),
     onCall: Color(0xFFFFFFFF),
@@ -399,6 +412,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Gradient? photoScrim,
     Color? photoChip,
     Color? illustration,
+    Color? photoBackdrop,
     Color? rating,
     Color? callBackground,
     Color? onCall,
@@ -419,6 +433,7 @@ class AppColors extends ThemeExtension<AppColors> {
         photoScrim: photoScrim ?? this.photoScrim,
         photoChip: photoChip ?? this.photoChip,
         illustration: illustration ?? this.illustration,
+        photoBackdrop: photoBackdrop ?? this.photoBackdrop,
         rating: rating ?? this.rating,
         callBackground: callBackground ?? this.callBackground,
         onCall: onCall ?? this.onCall,
@@ -444,6 +459,7 @@ class AppColors extends ThemeExtension<AppColors> {
       photoScrim: Gradient.lerp(photoScrim, other.photoScrim, t)!,
       photoChip: c(photoChip, other.photoChip),
       illustration: c(illustration, other.illustration),
+      photoBackdrop: c(photoBackdrop, other.photoBackdrop),
       rating: c(rating, other.rating),
       callBackground: c(callBackground, other.callBackground),
       onCall: c(onCall, other.onCall),

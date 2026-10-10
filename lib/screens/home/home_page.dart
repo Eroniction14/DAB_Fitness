@@ -82,12 +82,10 @@ class _NextSessionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final booking = context.watch<BookingModel>();
     final shell = ShellScope.maybeOf(context);
-    final now = DateTime.now();
-    final upcoming = booking.getAppoinments
-        .where((b) => b.startsAt?.isAfter(now) ?? false)
-        .toList()
-      ..sort((a, b) => a.startsAt!.compareTo(b.startsAt!));
-    final Booking? next = upcoming.firstOrNull;
+    // Never a past session: groupBookings puts anything already started
+    // in Past.
+    final Booking? next =
+        groupBookings(booking.getAppoinments, DateTime.now()).next;
 
     if (booking.bookingsLoading && next == null) {
       return Container(
@@ -126,6 +124,8 @@ class _NextSessionCard extends StatelessWidget {
         ),
       );
     }
+    final trainerName =
+        context.watch<DatabaseModel>().trainerName(next.trainerId);
     return AppCard(
       onTap: shell == null ? null : () => shell.selectTab(shell.bookingsTab),
       child: Row(
@@ -146,14 +146,18 @@ class _NextSessionCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${friendlyDate(next.date)} at ${next.time}',
+                Text(
+                    trainerName == null
+                        ? 'Your next session'
+                        : 'With $trainerName',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: context.textStyles.titleMedium),
-                if (next.address.isNotEmpty)
-                  Text(next.address,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textStyles.bodyMedium
-                          ?.copyWith(color: context.appColors.textSecondary)),
+                Text(bookingWhen(next),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textStyles.bodyMedium
+                        ?.copyWith(color: context.appColors.textSecondary)),
               ],
             ),
           ),
@@ -203,11 +207,8 @@ class _TopPicks extends StatelessWidget {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image.asset(workout.image, fit: BoxFit.cover),
-                        Center(
-                          child: Icon(Icons.play_circle_fill,
-                              size: 40, color: context.appColors.onPhoto),
-                        ),
+                        WorkoutImage(workout.image),
+                        const Center(child: PlayOverlay()),
                       ],
                     ),
                   ),

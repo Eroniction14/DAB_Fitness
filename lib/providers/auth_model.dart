@@ -45,6 +45,10 @@ class AuthModel with ChangeNotifier {
     return uid;
   }
 
+  /// Emails a password-reset link. Throws `FirebaseAuthException`.
+  Future<void> sendPasswordReset(String email) =>
+      _service.sendPasswordReset(email);
+
   Future<void> logout() async {
     await _service.signOut();
     _setUserId(null);

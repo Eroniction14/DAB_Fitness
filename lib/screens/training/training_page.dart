@@ -118,8 +118,8 @@ class _TrainingPageState extends State<TrainingPage> {
           image: category.image,
           title: category.name,
           caption: 'Find a trainer',
-          onTap: () =>
-              Navigator.of(context).pushNamed(TrainerListPage.routeName),
+          onTap: () => Navigator.of(context)
+              .pushNamed(TrainerListPage.routeName, arguments: category),
         );
       },
     );

@@ -5,6 +5,8 @@ import 'package:dab_fitness/config/theme.dart';
 import 'package:dab_fitness/models/profile.dart';
 import 'package:dab_fitness/models/trainer.dart';
 import 'package:dab_fitness/providers/database_model.dart';
+import 'package:dab_fitness/widgets/speciality_field.dart';
+import 'package:dab_fitness/widgets/app_snackbar.dart';
 
 /// Edits the signed-in user's or trainer's profile. Email can't be changed
 /// here (that needs a Firebase Auth verification flow).
@@ -43,16 +45,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
     setState(() => _isSaving = true);
     try {
       await context.read<DatabaseModel>().updateProfile(changes);
-      messenger.showSnackBar(const SnackBar(
-        content: Text('Profile saved'),
-        duration: Duration(seconds: 2),
-      ));
+      messenger.showInfo('Profile saved');
       navigator.pop();
     } catch (e) {
       debugPrint('Saving profile failed: $e');
-      messenger.showSnackBar(const SnackBar(
-        content: Text('Could not save. Check your connection and try again.'),
-      ));
+      messenger
+          .showError('Could not save. Check your connection and try again.');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -86,7 +84,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
               _field('Name', 'Name'),
               if (_isTrainer) ...[
                 _field('Age', 'Age', keyboardType: TextInputType.number),
-                _field('Speciality', 'Speciality'),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                  child: SpecialityField(
+                    initialValue: _values['Speciality'],
+                    onSaved: (v) => _values['Speciality'] = v ?? '',
+                  ),
+                ),
                 _field('Description', 'Description', maxLines: 4),
               ],
               _field('Phone number', 'Number',

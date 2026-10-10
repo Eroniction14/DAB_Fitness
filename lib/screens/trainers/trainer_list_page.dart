@@ -3,17 +3,25 @@ import 'package:provider/provider.dart';
 
 import 'package:dab_fitness/config/theme.dart';
 import 'package:dab_fitness/models/trainer.dart';
+import 'package:dab_fitness/models/workout.dart';
 import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/screens/trainers/book_trainer.dart';
 import 'package:dab_fitness/screens/trainers/trainer_detail_page.dart';
 import 'package:dab_fitness/widgets/app_card.dart';
 import 'package:dab_fitness/widgets/busy_button.dart';
+import 'package:dab_fitness/widgets/empty_state.dart';
 import 'package:dab_fitness/widgets/rating_stars.dart';
 import 'package:dab_fitness/widgets/refreshable_list.dart';
+import 'package:dab_fitness/widgets/app_snackbar.dart';
 
+/// Swipeable trainer cards. Push with a [WorkoutCategory] as the route
+/// argument (or [category]) to show only trainers in that category.
 class TrainerListPage extends StatefulWidget {
   static const routeName = '/trainerpage';
-  const TrainerListPage({super.key});
+
+  /// Overrides the route argument; mainly for tests.
+  final WorkoutCategory? category;
+  const TrainerListPage({super.key, this.category});
 
   @override
   State<TrainerListPage> createState() => _TrainerListPageState();
@@ -23,6 +31,24 @@ class _TrainerListPageState extends State<TrainerListPage> {
   final _pageController = PageController(viewportFraction: 0.85);
   int _index = 0;
   String? _bookingFor; // trainerId currently being booked
+
+  /// The category filter; null shows everyone.
+  WorkoutCategory? _category;
+  bool _filterRead = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_filterRead) return;
+    _filterRead = true;
+    _category = widget.category ??
+        ModalRoute.of(context)?.settings.arguments as WorkoutCategory?;
+  }
+
+  void _showAll() => setState(() {
+        _category = null;
+        _index = 0;
+      });
 
   @override
   void dispose() {
@@ -35,9 +61,8 @@ class _TrainerListPageState extends State<TrainerListPage> {
     final messenger = ScaffoldMessenger.of(context);
     await database.loadTrainers();
     if (database.trainersError != null) {
-      messenger.showSnackBar(const SnackBar(
-        content: Text("Couldn't refresh. Showing the last loaded trainers."),
-      ));
+      messenger
+          .showError("Couldn't refresh. Showing the last loaded trainers.");
     }
   }
 
@@ -51,12 +76,32 @@ class _TrainerListPageState extends State<TrainerListPage> {
   @override
   Widget build(BuildContext context) {
     final database = context.watch<DatabaseModel>();
-    final trainers = database.getTrainersData;
+    final category = _category;
+    final everyone = database.getTrainersData;
+    final trainers = category == null
+        ? everyone
+        : everyone.where((t) => category.matches(t.speciality)).toList();
 
+    if (category != null && trainers.isEmpty && everyone.isNotEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: Text(category.name)),
+        body: Center(
+          child: EmptyState(
+            icon: Icons.person_search_outlined,
+            title: 'No ${category.name} trainers yet',
+            hint: 'Browse all our trainers instead.',
+            action: FilledButton(
+              onPressed: _showAll,
+              child: const Text('Show all trainers'),
+            ),
+          ),
+        ),
+      );
+    }
     if (trainers.isEmpty) {
       // Loading, error or empty: a pull-to-refreshable message.
       return Scaffold(
-        appBar: AppBar(title: const Text('Trainers')),
+        appBar: AppBar(title: Text(category?.name ?? 'Trainers')),
         body: RefreshableList<Trainer>(
           items: const [],
           isLoading: database.trainersLoading,
@@ -77,7 +122,15 @@ class _TrainerListPageState extends State<TrainerListPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: onPhoto,
+        title: Text(category?.name ?? 'All trainers',
+            style: context.textStyles.titleMedium?.copyWith(color: onPhoto)),
         actions: [
+          if (category != null)
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: onPhoto),
+              onPressed: _showAll,
+              child: const Text('Show all'),
+            ),
           // The carousel scrolls sideways, so refresh is a button here.
           IconButton(
             tooltip: 'Refresh trainers',

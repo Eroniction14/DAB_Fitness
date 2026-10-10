@@ -34,6 +34,11 @@ class AuthService {
   }
 
   Future<void> signOut() => _auth.signOut();
+
+  /// Emails a password-reset link. Firebase's email-enumeration protection
+  /// means this usually succeeds even if no account uses [email].
+  Future<void> sendPasswordReset(String email) =>
+      _auth.sendPasswordResetEmail(email: email);
 }
 
 /// Turns a Firebase Auth error into a readable message.
@@ -56,6 +61,8 @@ String authErrorMessage(Object error) {
       return 'Too many attempts. Please try again later.';
     case 'user-disabled':
       return 'This account has been disabled.';
+    case 'missing-email':
+      return 'Enter your email address.';
     case 'network-request-failed':
       return 'Could not connect. Check your internet connection.';
     default:

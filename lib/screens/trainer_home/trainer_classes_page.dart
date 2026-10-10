@@ -15,6 +15,7 @@ import 'package:dab_fitness/widgets/live_class_card.dart';
 import 'package:dab_fitness/widgets/page_header.dart';
 import 'package:dab_fitness/widgets/picker_tile.dart';
 import 'package:dab_fitness/widgets/refreshable_list.dart';
+import 'package:dab_fitness/widgets/app_snackbar.dart';
 
 /// Trainer: my upcoming live classes, updated live, with a FAB to schedule
 /// a new one.
@@ -70,17 +71,12 @@ class _TrainerClassesPageState extends State<TrainerClassesPage> {
             details.title,
             details.durationMinutes,
           );
-      messenger.showSnackBar(const SnackBar(
-        content: Text('Class scheduled'),
-        duration: Duration(seconds: 2),
-      ));
+      messenger.showInfo('Class scheduled');
     } on BookingException catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+      messenger.showError(e.message);
     } catch (e) {
       debugPrint('Scheduling class failed: $e');
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Could not schedule the class.')),
-      );
+      messenger.showError('Could not schedule the class.');
     }
   }
 

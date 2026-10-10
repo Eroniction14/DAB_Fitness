@@ -8,6 +8,7 @@ import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/services/location_service.dart';
 import 'package:dab_fitness/widgets/booking_sheet.dart';
+import 'package:dab_fitness/widgets/app_snackbar.dart';
 
 /// Asks for a date and time in the booking sheet, then books [trainer].
 /// [onBusy] is told when the booking starts (true) and ends (false), so the
@@ -31,19 +32,16 @@ Future<void> bookTrainer(BuildContext context, Trainer trainer,
       trainer.trainerId,
       userName,
     );
-    messenger.showSnackBar(SnackBar(
-      content: Text(ok
-          ? 'Session booked with ${trainer.name}!'
-          : 'Booking failed. Please try again.'),
-      duration: const Duration(seconds: 2),
-    ));
+    if (ok) {
+      messenger.showInfo('Session booked with ${trainer.name}!');
+    } else {
+      messenger.showError('Booking failed. Please try again.');
+    }
   } on BookingException catch (e) {
-    messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    messenger.showError(e.message);
   } catch (e) {
     debugPrint('Booking failed: $e');
-    messenger.showSnackBar(const SnackBar(
-      content: Text('Could not connect. Check your internet connection.'),
-    ));
+    messenger.showError('Could not connect. Check your internet connection.');
   } finally {
     onBusy(false);
   }

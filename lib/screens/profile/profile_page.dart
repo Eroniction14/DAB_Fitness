@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:dab_fitness/config/theme.dart';
-import 'package:dab_fitness/models/booking.dart';
 import 'package:dab_fitness/models/trainer.dart';
 import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/screens/auth/logout.dart';
+import 'package:dab_fitness/screens/bookings/bookings_page.dart';
 import 'package:dab_fitness/screens/profile/edit_profile_page.dart';
 import 'package:dab_fitness/screens/shell/shell_scope.dart';
+import 'package:dab_fitness/screens/trainer_home/trainer_bookings_page.dart';
 import 'package:dab_fitness/widgets/app_card.dart';
-import 'package:dab_fitness/widgets/booking_tile.dart';
 import 'package:dab_fitness/widgets/initials_avatar.dart';
 import 'package:dab_fitness/widgets/page_header.dart';
-import 'package:dab_fitness/widgets/refreshable_list.dart';
+import 'package:dab_fitness/widgets/grouped_bookings_list.dart';
 
 /// The signed-in account's profile (user or trainer): avatar, role, details,
 /// and Edit profile / My appointments / Log out. Reads the live profile, so
@@ -160,15 +160,16 @@ class _AppointmentsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final booking = context.watch<BookingModel>();
-    return RefreshableList<Booking>(
-      items: booking.getAppoinments,
+    final isTrainer = context.watch<DatabaseModel>().profile is Trainer;
+    return GroupedBookingsList(
+      bookings: booking.getAppoinments,
       isLoading: booking.bookingsLoading,
       error: booking.bookingsError,
       onRefresh: booking.refreshBookings,
       emptyTitle: 'No appointments scheduled',
-      emptyIcon: Icons.event_available_outlined,
-      itemBuilder: (context, item) =>
-          BookingTile(item, key: ValueKey(item.key)),
+      tileBuilder: (context, item, muted) => isTrainer
+          ? trainerBookingTile(item, muted: muted)
+          : userBookingTile(context, item, muted: muted),
     );
   }
 }

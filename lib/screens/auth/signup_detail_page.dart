@@ -11,6 +11,8 @@ import 'package:dab_fitness/services/auth_service.dart';
 import 'package:dab_fitness/services/location_service.dart';
 import 'package:dab_fitness/widgets/auth_layout.dart';
 import 'package:dab_fitness/widgets/busy_button.dart';
+import 'package:dab_fitness/widgets/speciality_field.dart';
+import 'package:dab_fitness/widgets/app_snackbar.dart';
 
 class SignUpDetail extends StatefulWidget {
   /// 0 = User, 1 = Trainer; null lets the user choose ([SignUpDetail.complete]).
@@ -47,9 +49,7 @@ class _SignUpDetailState extends State<SignUpDetail> {
   bool get _isTrainer => _mode == 1;
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context).showError(message);
   }
 
   Future<void> _submit() async {
@@ -145,7 +145,11 @@ class _SignUpDetailState extends State<SignUpDetail> {
               _field('Name', 'Full name', autofill: AutofillHints.name),
               if (_isTrainer) ...[
                 _field('Age', 'Age', keyboardType: TextInputType.number),
-                _field('Speciality', 'Speciality (e.g. Yoga)'),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                  child: SpecialityField(
+                      onSaved: (v) => _data['Speciality'] = v ?? ''),
+                ),
                 _field('Description', 'About you', maxLines: 3),
               ],
               _field('Number', 'Phone number',

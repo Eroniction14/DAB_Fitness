@@ -22,6 +22,16 @@ class DatabaseModel with ChangeNotifier {
   Profile? get profile => user ?? trainer;
 
   UserProfile get getUser => user!;
+
+  /// Name of the trainer with [trainerId] from the loaded trainer list, or
+  /// null if unknown (e.g. not loaded yet, or the trainer was removed).
+  String? trainerName(String trainerId) {
+    for (final t in trainersList) {
+      if (t.trainerId == trainerId && t.name.isNotEmpty) return t.name;
+    }
+    return null;
+  }
+
   Trainer get getTrainer => trainer!;
   List<Trainer> get getTrainersData => trainersList;
 

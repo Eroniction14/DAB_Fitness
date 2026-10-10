@@ -71,3 +71,45 @@ class BookingException implements Exception {
   @override
   String toString() => 'BookingException: $message';
 }
+
+/// Bookings split for display. [today] and [upcoming] are soonest first;
+/// [past] is most recent first.
+class GroupedBookings {
+  final List<Booking> today;
+  final List<Booking> upcoming;
+  final List<Booking> past;
+  const GroupedBookings(this.today, this.upcoming, this.past);
+
+  /// The soonest session that hasn't started yet, or null.
+  Booking? get next => today.isNotEmpty
+      ? today.first
+      : (upcoming.isNotEmpty ? upcoming.first : null);
+
+  bool get isEmpty => today.isEmpty && upcoming.isEmpty && past.isEmpty;
+}
+
+/// Groups [bookings] relative to [now]: a session is past once it has
+/// started (or if its date/time is malformed), today if it is later today,
+/// upcoming otherwise.
+GroupedBookings groupBookings(Iterable<Booking> bookings, DateTime now) {
+  final today = <Booking>[], upcoming = <Booking>[], past = <Booking>[];
+  for (final b in bookings) {
+    final start = b.startsAt;
+    if (start == null || !start.isAfter(now)) {
+      past.add(b);
+    } else if (start.year == now.year &&
+        start.month == now.month &&
+        start.day == now.day) {
+      today.add(b);
+    } else {
+      upcoming.add(b);
+    }
+  }
+  int soonest(Booking a, Booking b) => a.startsAt!.compareTo(b.startsAt!);
+  today.sort(soonest);
+  upcoming.sort(soonest);
+  // Malformed dates sort last.
+  past.sort((a, b) =>
+      (b.startsAt ?? DateTime(0)).compareTo(a.startsAt ?? DateTime(0)));
+  return GroupedBookings(today, upcoming, past);
+}
