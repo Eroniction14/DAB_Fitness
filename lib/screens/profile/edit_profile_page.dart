@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:dab_fitness/config/theme.dart';
 import 'package:dab_fitness/models/profile.dart';
 import 'package:dab_fitness/models/trainer.dart';
 import 'package:dab_fitness/providers/database_model.dart';
@@ -79,7 +80,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppSpacing.screen),
             children: [
               _readOnly('Email', widget.profile.email),
               _field('Name', 'Name'),
@@ -100,11 +101,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Widget _readOnly(String label, String value) => Padding(
-        padding: const EdgeInsets.only(bottom: 20),
+        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
         child: InputDecorator(
           decoration: InputDecoration(
             labelText: label,
-            border: const OutlineInputBorder(),
             helperText: "Email can't be changed",
           ),
           child: Text(value),
@@ -115,14 +115,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Widget _field(String label, String key,
       {TextInputType? keyboardType, int maxLines = 1, bool required = true}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
       child: TextFormField(
         initialValue: _values[key],
         keyboardType: keyboardType,
         maxLines: maxLines,
         decoration: InputDecoration(
           labelText: label,
-          border: const OutlineInputBorder(),
         ),
         validator: (value) =>
             required && (value == null || value.trim().isEmpty)

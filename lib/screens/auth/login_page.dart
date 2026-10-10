@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import 'package:dab_fitness/config/theme.dart';
 import 'package:dab_fitness/providers/auth_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/screens/auth/signup_detail_page.dart';
 import 'package:dab_fitness/screens/auth/signup_page.dart';
-import 'package:dab_fitness/screens/shell/user_shell.dart';
 import 'package:dab_fitness/screens/shell/trainer_shell.dart';
+import 'package:dab_fitness/screens/shell/user_shell.dart';
 import 'package:dab_fitness/services/auth_service.dart';
-import 'package:dab_fitness/widgets/fade_animation.dart';
+import 'package:dab_fitness/widgets/auth_layout.dart';
+import 'package:dab_fitness/widgets/busy_button.dart';
 
 class LoginPage extends StatefulWidget {
   static const routeName = '/login';
@@ -27,10 +28,7 @@ class _LoginPageState extends State<LoginPage> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Theme.of(context).colorScheme.error,
-      ),
+      SnackBar(content: Text(message)),
     );
   }
 
@@ -67,154 +65,50 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
+    return AuthLayout(
+      title: 'Welcome back',
+      subtitle: 'Log in to keep training.',
+      footer: AuthFooterLink(
+        prompt: 'New here?',
+        action: 'Create an account',
+        onPressed: () =>
+            Navigator.of(context).pushReplacementNamed(SignUpPage.routeName),
       ),
-      body: SafeArea(
-        child: Form(
+      children: [
+        Form(
           key: _formKey,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+          child: AutofillGroup(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const FadeAnimation(
-                  1,
-                  Text("Login",
-                      style:
-                          TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+                TextFormField(
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.email],
+                  decoration: const InputDecoration(labelText: 'Email'),
+                  validator: (value) {
+                    final v = value?.trim() ?? '';
+                    if (v.isEmpty || !v.contains('@')) return 'Invalid email!';
+                    return null;
+                  },
+                  onSaved: (value) => _email = value?.trim() ?? '',
                 ),
-                const SizedBox(height: 20),
-                FadeAnimation(
-                  1.2,
-                  Text("Login to your account",
-                      style:
-                          TextStyle(fontSize: 15, color: Colors.grey.shade700)),
+                formGap,
+                PasswordField(
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _submit(),
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Enter your password'
+                      : null,
+                  onSaved: (value) => _password = value ?? '',
                 ),
-                const SizedBox(height: 60),
-                FadeAnimation(
-                  1.3,
-                  _input(
-                    label: "Email",
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    validator: (value) {
-                      final v = value?.trim() ?? '';
-                      if (v.isEmpty || !v.contains('@')) {
-                        return 'Invalid email!';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => _email = value?.trim() ?? '',
-                  ),
-                ),
-                FadeAnimation(
-                  1.4,
-                  _input(
-                    label: "Password",
-                    obscureText: true,
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _submit(),
-                    validator: (value) => (value == null || value.isEmpty)
-                        ? 'Enter your password'
-                        : null,
-                    onSaved: (value) => _password = value ?? '',
-                  ),
-                ),
-                const SizedBox(height: 10),
-                FadeAnimation(1.5, _loginButton()),
-                const SizedBox(height: 30),
-                FadeAnimation(
-                  1.6,
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Don't have an account? "),
-                      InkWell(
-                        onTap: () => Navigator.of(context)
-                            .pushReplacementNamed(SignUpPage.routeName),
-                        child: const Text(
-                          "Sign up",
-                          style: TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 18),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const SizedBox(height: AppSpacing.xl),
+                BusyFilledButton(
+                    label: 'Log in', busy: _isLoading, onPressed: _submit),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _loginButton() {
-    return Container(
-      padding: const EdgeInsets.only(top: 3, left: 3),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(50),
-        border: Border.all(color: Colors.black),
-      ),
-      child: MaterialButton(
-        minWidth: double.infinity,
-        height: 60,
-        onPressed: _isLoading ? null : _submit,
-        color: Colors.greenAccent,
-        disabledColor: Colors.greenAccent,
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
-        child: _isLoading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2.5),
-              )
-            : const Text("Login",
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
-      ),
-    );
-  }
-
-  Widget _input({
-    required String label,
-    required FormFieldValidator<String> validator,
-    required FormFieldSetter<String> onSaved,
-    bool obscureText = false,
-    TextInputType? keyboardType,
-    TextInputAction? textInputAction,
-    ValueChanged<String>? onFieldSubmitted,
-  }) {
-    final border =
-        OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade400));
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w400,
-                color: Colors.black87)),
-        const SizedBox(height: 5),
-        TextFormField(
-          obscureText: obscureText,
-          keyboardType: keyboardType,
-          textInputAction: textInputAction,
-          onFieldSubmitted: onFieldSubmitted,
-          decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-            enabledBorder: border,
-            border: border,
-          ),
-          validator: validator,
-          onSaved: onSaved,
-        ),
-        const SizedBox(height: 30),
       ],
     );
   }

@@ -15,25 +15,10 @@ final _forbidden = <String, RegExp>{
 /// The design system itself.
 const _themeFile = 'lib/config/theme.dart';
 
-/// Screens not yet restyled (Phase 4b). Remove each file as it's converted;
-/// the test fails if a listed file is already clean, so the list can only
-/// shrink.
-const _notYetConverted = {
-  'lib/screens/auth/login_page.dart',
-  'lib/screens/auth/signup_detail_page.dart',
-  'lib/screens/auth/signup_page.dart',
-  'lib/screens/home/home_page.dart',
-  'lib/screens/live_class/call_page.dart',
-  'lib/screens/onboarding/launch_page.dart',
-  'lib/screens/onboarding/splash_screen.dart',
-  'lib/screens/onboarding/welcome_page.dart',
-  'lib/screens/profile/profile_page.dart',
-  'lib/screens/trainers/trainer_detail_page.dart',
-  'lib/screens/trainers/trainer_list_page.dart',
-  'lib/screens/training/training_page.dart',
-  'lib/screens/training/video_detail_page.dart',
-  'lib/widgets/video_player_widget.dart',
-};
+/// Files allowed to break the rule. Empty since Phase 4b; keep it that way.
+/// (The test fails if a listed file is already clean, so the list can only
+/// shrink.)
+const _notYetConverted = <String>{};
 
 /// Violations in [file], ignoring `//` comments.
 List<String> _violations(File file) {

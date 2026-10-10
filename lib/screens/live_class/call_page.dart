@@ -7,8 +7,10 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 import 'package:dab_fitness/config/agora_config.dart';
+import 'package:dab_fitness/config/theme.dart';
 import 'package:dab_fitness/models/live_class.dart';
 import 'package:dab_fitness/providers/booking_model.dart';
+import 'package:dab_fitness/widgets/info_chip.dart';
 
 /// Opens [liveClass]: the trainer as host (broadcaster, needs camera and
 /// microphone), everyone else as audience.
@@ -186,7 +188,7 @@ class _CallPageState extends State<CallPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: context.appColors.callBackground,
       body: SafeArea(
         child: Stack(
           children: [
@@ -242,20 +244,21 @@ class _CallPageState extends State<CallPage> {
   }
 
   Widget _message(String text, {IconData? icon}) {
+    final onCall = context.appColors.onCall;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null)
-              Icon(icon, color: Colors.white70, size: 48)
+              Icon(icon, color: onCall, size: 48)
             else
-              const CircularProgressIndicator(color: Colors.white70),
-            const SizedBox(height: 16),
+              CircularProgressIndicator(color: onCall),
+            const SizedBox(height: AppSpacing.lg),
             Text(text,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 16)),
+                style: context.textStyles.bodyLarge?.copyWith(color: onCall)),
           ],
         ),
       ),
@@ -268,22 +271,12 @@ class _CallPageState extends State<CallPage> {
       builder: (context, snapshot) {
         final count = snapshot.data?.participants;
         if (count == null) return const SizedBox.shrink();
-        return Container(
-          margin: const EdgeInsets.all(12),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.black54,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.visibility, color: Colors.white, size: 18),
-              const SizedBox(width: 6),
-              Text('$count watching',
-                  style: const TextStyle(color: Colors.white)),
-            ],
-          ),
+        return Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: InfoChip(
+              icon: Icons.visibility_outlined,
+              label: '$count watching',
+              onPhoto: true),
         );
       },
     );
@@ -292,53 +285,55 @@ class _CallPageState extends State<CallPage> {
   // ---------- Controls ----------
 
   Widget _toolbar() {
+    final scheme = context.colors;
+    final colors = context.appColors;
+    // Secondary controls: light circles; hang up: large error-red circle.
+    final secondary = IconButton.styleFrom(
+      backgroundColor: colors.onCall,
+      foregroundColor: colors.callBackground,
+      minimumSize: const Size.square(56),
+    );
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 32),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (_isBroadcaster)
-            _roundButton(
-              icon: _muted ? Icons.mic_off : Icons.mic,
-              iconColor: _muted ? Colors.white : Colors.blueAccent,
-              fill: _muted ? Colors.blueAccent : Colors.white,
+          if (_isBroadcaster) ...[
+            IconButton.filled(
+              tooltip: _muted ? 'Unmute' : 'Mute',
+              style: _muted
+                  ? IconButton.styleFrom(
+                      backgroundColor: scheme.primary,
+                      foregroundColor: scheme.onPrimary,
+                      minimumSize: const Size.square(56))
+                  : secondary,
+              icon: Icon(_muted ? Icons.mic_off : Icons.mic),
               onPressed: _toggleMute,
             ),
-          _roundButton(
-            icon: Icons.call_end,
-            iconColor: Colors.white,
-            fill: Colors.redAccent,
-            size: 35,
-            padding: 15,
+            const SizedBox(width: AppSpacing.xl),
+          ],
+          IconButton.filled(
+            tooltip: 'Leave call',
+            style: IconButton.styleFrom(
+              backgroundColor: scheme.error,
+              foregroundColor: scheme.onError,
+              minimumSize: const Size.square(72),
+            ),
+            iconSize: 32,
+            icon: const Icon(Icons.call_end),
             onPressed: () => Navigator.pop(context),
           ),
-          if (_isBroadcaster)
-            _roundButton(
-              icon: Icons.switch_camera,
-              iconColor: Colors.blueAccent,
-              fill: Colors.white,
+          if (_isBroadcaster) ...[
+            const SizedBox(width: AppSpacing.xl),
+            IconButton.filled(
+              tooltip: 'Switch camera',
+              style: secondary,
+              icon: const Icon(Icons.cameraswitch_outlined),
               onPressed: () => _engine.switchCamera(),
             ),
+          ],
         ],
       ),
-    );
-  }
-
-  Widget _roundButton({
-    required IconData icon,
-    required Color iconColor,
-    required Color fill,
-    required VoidCallback onPressed,
-    double size = 20,
-    double padding = 12,
-  }) {
-    return RawMaterialButton(
-      onPressed: onPressed,
-      shape: const CircleBorder(),
-      elevation: 2,
-      fillColor: fill,
-      padding: EdgeInsets.all(padding),
-      child: Icon(icon, color: iconColor, size: size),
     );
   }
 
@@ -361,15 +356,15 @@ class _CallPageState extends State<CallPage> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.xs / 2, horizontal: AppSpacing.sm),
                   decoration: BoxDecoration(
-                    color: Colors.yellowAccent.withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(5),
+                    color: context.colors.tertiaryContainer,
+                    borderRadius: AppRadius.inputAll,
                   ),
                   child: Text(text,
-                      style: const TextStyle(
-                          color: Colors.blueGrey, fontSize: 12)),
+                      style: context.textStyles.bodySmall?.copyWith(
+                          color: context.colors.onTertiaryContainer)),
                 ),
               ),
             );

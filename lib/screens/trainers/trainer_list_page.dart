@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import 'package:dab_fitness/models/booking.dart';
+import 'package:dab_fitness/config/theme.dart';
 import 'package:dab_fitness/models/trainer.dart';
-import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
+import 'package:dab_fitness/screens/trainers/book_trainer.dart';
 import 'package:dab_fitness/screens/trainers/trainer_detail_page.dart';
-import 'package:dab_fitness/services/location_service.dart';
+import 'package:dab_fitness/widgets/app_card.dart';
+import 'package:dab_fitness/widgets/busy_button.dart';
+import 'package:dab_fitness/widgets/rating_stars.dart';
 import 'package:dab_fitness/widgets/refreshable_list.dart';
 
 class TrainerListPage extends StatefulWidget {
@@ -40,44 +41,12 @@ class _TrainerListPageState extends State<TrainerListPage> {
     }
   }
 
-  Future<void> _book(Trainer trainer) async {
-    final slot = await showDialog<BookingSlot>(
-      context: context,
-      builder: (_) => const BookingDialog(),
-    );
-    if (slot == null || !mounted) return;
-
-    setState(() => _bookingFor = trainer.trainerId);
-    final booking = context.read<BookingModel>();
-    final userName = context.read<DatabaseModel>().user?.name ?? '';
-    final messenger = ScaffoldMessenger.of(context);
-
-    try {
-      final city = await getCity();
-      final ok = await booking.book(
-        DateFormat('yyyy-MM-dd').format(slot.date),
-        slot.time,
-        city,
-        trainer.trainerId,
-        userName,
-      );
-      messenger.showSnackBar(SnackBar(
-        content: Text(ok
-            ? 'Session booked with ${trainer.name}!'
-            : 'Booking failed. Please try again.'),
-        duration: const Duration(seconds: 2),
-      ));
-    } on BookingException catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (e) {
-      debugPrint('Booking failed: $e');
-      messenger.showSnackBar(const SnackBar(
-        content: Text('Could not connect. Check your internet connection.'),
-      ));
-    } finally {
-      if (mounted) setState(() => _bookingFor = null);
-    }
-  }
+  Future<void> _book(Trainer trainer) =>
+      bookTrainer(context, trainer, onBusy: (busy) {
+        if (mounted) {
+          setState(() => _bookingFor = busy ? trainer.trainerId : null);
+        }
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -102,22 +71,21 @@ class _TrainerListPageState extends State<TrainerListPage> {
     }
     final current = trainers[_index.clamp(0, trainers.length - 1)];
 
+    final onPhoto = context.appColors.onPhoto;
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
-        elevation: 0,
+        foregroundColor: onPhoto,
         actions: [
           // The carousel scrolls sideways, so refresh is a button here.
           IconButton(
             tooltip: 'Refresh trainers',
             icon: database.trainersLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
+                ? SizedBox.square(
+                    dimension: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2, color: onPhoto),
                   )
                 : const Icon(Icons.refresh),
             onPressed: database.trainersLoading ? null : _refresh,
@@ -141,15 +109,9 @@ class _TrainerListPageState extends State<TrainerListPage> {
               ),
             ),
           ),
-          const Positioned.fill(
+          Positioned.fill(
             child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.black26, Colors.black87],
-                ),
-              ),
+              decoration: BoxDecoration(gradient: context.appColors.photoScrim),
             ),
           ),
           SafeArea(
@@ -177,85 +139,61 @@ class _TrainerListPageState extends State<TrainerListPage> {
 
   Widget _trainerCard(Trainer trainer) {
     final isBooking = _bookingFor == trainer.trainerId;
-    const bold20 = TextStyle(fontSize: 20, fontWeight: FontWeight.bold);
+    final text = context.textStyles;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 0, 8, 24),
-      child: Card(
-        elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(trainer.name,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: bold20),
-              const SizedBox(height: 8),
-              Expanded(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.sm, 0, AppSpacing.sm, AppSpacing.xl),
+      child: AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Semantics(
+                button: true,
+                label: 'View ${trainer.name}',
                 child: GestureDetector(
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => TrainerDetail(trainer)),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: AppRadius.inputAll,
                     child: Image.asset(trainer.image, fit: BoxFit.cover),
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
-              // Age and rating share one row; the stars shrink on narrow
-              // screens instead of overflowing.
-              Row(
-                children: [
-                  Text("Age: ${trainer.age}", style: bold20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerRight,
-                      child: Row(
-                        children: [
-                          for (int i = 0; i < 5; i++)
-                            Icon(
-                                i < trainer.rating
-                                    ? Icons.star
-                                    : Icons.star_border,
-                                color: Colors.amber),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 16),
-              SizedBox(
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: isBooking ? null : () => _book(trainer),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1BC0C5),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                  ),
-                  child: isBooking
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2.5, color: Colors.white),
-                        )
-                      : const Text("BOOK NOW",
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(trainer.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: text.titleMedium),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(trainer.speciality,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.bodyMedium
+                          ?.copyWith(color: context.appColors.textSecondary)),
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: AppSpacing.sm),
+                // Shrinks on narrow screens instead of overflowing.
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: RatingStars(rating: trainer.rating, size: 18),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            BusyFilledButton(
+                label: 'Book',
+                busy: isBooking,
+                onPressed: () => _book(trainer)),
+          ],
         ),
       ),
     );

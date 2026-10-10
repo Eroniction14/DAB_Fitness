@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'package:dab_fitness/config/onboarding_strings.dart';
+import 'package:dab_fitness/config/theme.dart';
 import 'package:dab_fitness/screens/onboarding/welcome_page.dart';
 
+/// First-run onboarding: four slides, then the Welcome page.
 class LaunchPage extends StatefulWidget {
   const LaunchPage({super.key});
 
@@ -10,15 +12,29 @@ class LaunchPage extends StatefulWidget {
   State<LaunchPage> createState() => _LaunchPageState();
 }
 
-class _LaunchPageState extends State<LaunchPage> {
-  late PageController _pageController;
-  int currentIndex = 0;
+class _Slide {
+  final String image;
+  final String title;
+  final String body;
+  const _Slide(this.image, this.title, this.body);
+}
 
-  @override
-  void initState() {
-    _pageController = PageController(initialPage: 0);
-    super.initState();
-  }
+class _LaunchPageState extends State<LaunchPage> {
+  static const _slides = [
+    _Slide('assets/images/launch-4.png', OnboardingStrings.stepOneTitle,
+        OnboardingStrings.stepOneContent),
+    _Slide('assets/images/launch-1.png', OnboardingStrings.stepTwoTitle,
+        OnboardingStrings.stepTwoContent),
+    _Slide('assets/images/launch-3.jpg', OnboardingStrings.stepThreeTitle,
+        OnboardingStrings.stepThreeContent),
+    _Slide('assets/images/launch-2.jpg', OnboardingStrings.stepFourContent,
+        OnboardingStrings.stepFourBody),
+  ];
+
+  final _pageController = PageController();
+  int _index = 0;
+
+  bool get _isLast => _index == _slides.length - 1;
 
   @override
   void dispose() {
@@ -26,160 +42,141 @@ class _LaunchPageState extends State<LaunchPage> {
     super.dispose();
   }
 
+  void _finish() =>
+      Navigator.of(context).pushReplacementNamed(WelcomePage.routeName);
+
+  void _next() {
+    if (_isLast) {
+      _finish();
+    } else {
+      _pageController.nextPage(
+          duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        actions: currentIndex != 3
-            ? <Widget>[
-                Padding(
-                  padding: EdgeInsets.only(right: 20, top: 20),
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (BuildContext context) =>
-                                  WelcomePage()));
-                    },
-                    child: Text(
-                      'Skip',
-                      style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w400),
-                    ),
-                  ),
-                )
-              ]
-            : null,
-      ),
-      body: Stack(
-        alignment: Alignment.bottomCenter,
-        children: <Widget>[
-          PageView(
-            onPageChanged: (int page) {
-              setState(() {
-                currentIndex = page;
-              });
-            },
-            controller: _pageController,
-            children: <Widget>[
-              makePage(
-                  image: 'assets/images/launch-4.png',
-                  title: OnboardingStrings.stepOneTitle,
-                  content: OnboardingStrings.stepOneContent),
-              makePage(
-                  reverse: true,
-                  image: 'assets/images/launch-1.png',
-                  title: OnboardingStrings.stepTwoTitle,
-                  content: OnboardingStrings.stepTwoContent),
-              makePage(
-                  image: 'assets/images/launch-3.jpg',
-                  title: OnboardingStrings.stepThreeTitle,
-                  content: OnboardingStrings.stepThreeContent),
-              makePage(
-                  image: 'assets/images/launch-2.jpg',
-                  title: OnboardingStrings.stepThreeTitle,
-                  content: ""),
-            ],
-          ),
-          Container(
-            margin: EdgeInsets.only(bottom: 60),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: _buildIndicator(),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: _slides.length,
+                onPageChanged: (i) => setState(() => _index = i),
+                itemBuilder: (context, i) => _SlideView(_slides[i]),
+              ),
             ),
-          )
-        ],
+            _Dots(count: _slides.length, index: _index),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.screen,
+                  AppSpacing.xl, AppSpacing.screen, AppSpacing.lg),
+              child: Row(
+                children: [
+                  // Keep the layout stable on the last slide.
+                  Visibility(
+                    visible: !_isLast,
+                    maintainSize: true,
+                    maintainAnimation: true,
+                    maintainState: true,
+                    child: TextButton(
+                        onPressed: _finish, child: const Text('Skip')),
+                  ),
+                  const Spacer(),
+                  FilledButton(
+                    onPressed: _next,
+                    child: Text(_isLast ? 'Get started' : 'Next'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget makePage({image, title, content, reverse = false}) {
-    return Container(
-      padding: EdgeInsets.only(left: 50, right: 50, bottom: 60),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          !reverse
-              ? Column(
-                  children: <Widget>[
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20),
-                      child: Image.asset(image),
-                    ),
-                    SizedBox(
-                      height: 30,
-                    ),
-                  ],
-                )
-              : SizedBox(),
-          SizedBox(
-            height: 20,
-          ),
-          Text(
-            content,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          if (currentIndex == 3)
-            ElevatedButton(
-              onPressed: () => Navigator.of(context)
-                  .pushReplacementNamed(WelcomePage.routeName),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.tealAccent.shade400,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+class _SlideView extends StatelessWidget {
+  final _Slide slide;
+  const _SlideView(this.slide);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          flex: 3,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screen, AppSpacing.lg, AppSpacing.screen, 0),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: context.appColors.illustration,
+                borderRadius: AppRadius.cardAll,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Center(
+                  child: Image.asset(slide.image,
+                      fit: BoxFit.contain, excludeFromSemantics: true),
                 ),
               ),
-              child: Text(
-                "Get Started !!!",
-                style: Theme.of(context).textTheme.labelLarge,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 2,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screen, AppSpacing.xl, AppSpacing.screen, 0),
+            child: Column(
+              children: [
+                Text(slide.title,
+                    textAlign: TextAlign.center,
+                    style: context.textStyles.titleLarge),
+                const SizedBox(height: AppSpacing.md),
+                Text(slide.body,
+                    textAlign: TextAlign.center,
+                    style: context.textStyles.bodyLarge
+                        ?.copyWith(color: context.appColors.textSecondary)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Dots extends StatelessWidget {
+  final int count;
+  final int index;
+  const _Dots({required this.count, required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Page ${index + 1} of $count',
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          for (var i = 0; i < count; i++)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+              height: AppSpacing.sm,
+              width: i == index ? AppSpacing.xl : AppSpacing.sm,
+              decoration: ShapeDecoration(
+                shape: const StadiumBorder(),
+                color: i == index
+                    ? context.colors.primary
+                    : context.appColors.divider,
               ),
             ),
-          reverse
-              ? Column(
-                  children: <Widget>[
-                    SizedBox(
-                      height: 30,
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20),
-                      child: Image.asset(image),
-                    ),
-                  ],
-                )
-              : SizedBox(),
         ],
       ),
     );
-  }
-
-  Widget _indicator(bool isActive) {
-    return AnimatedContainer(
-      duration: Duration(milliseconds: 300),
-      height: 6,
-      width: isActive ? 30 : 6,
-      margin: EdgeInsets.only(right: 5),
-      decoration: BoxDecoration(
-          color: Colors.orange, borderRadius: BorderRadius.circular(5)),
-    );
-  }
-
-  List<Widget> _buildIndicator() {
-    List<Widget> indicators = [];
-    for (int i = 0; i < 4; i++) {
-      if (currentIndex == i) {
-        indicators.add(_indicator(true));
-      } else {
-        indicators.add(_indicator(false));
-      }
-    }
-
-    return indicators;
   }
 }

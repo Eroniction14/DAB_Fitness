@@ -6,9 +6,11 @@ import 'package:provider/provider.dart';
 import 'package:dab_fitness/providers/auth_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/screens/auth/signup_detail_page.dart';
-import 'package:dab_fitness/screens/shell/user_shell.dart';
 import 'package:dab_fitness/screens/onboarding/launch_page.dart';
 import 'package:dab_fitness/screens/shell/trainer_shell.dart';
+import 'package:dab_fitness/screens/shell/user_shell.dart';
+import 'package:dab_fitness/widgets/auth_layout.dart';
+import 'package:dab_fitness/widgets/empty_state.dart';
 
 /// Shows the logo, then routes to the right home if a session was restored,
 /// or to onboarding if not.
@@ -69,35 +71,29 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Same mark on the same background as the native splash, so the
+    // hand-over is seamless.
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        alignment: Alignment.bottomCenter,
-        children: [
-          Center(
-            child: Image.asset(
-              'assets/images/splash.jpg',
-              fit: BoxFit.fill,
-            ),
-          ),
-          if (_failed)
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 40),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text("Couldn't connect. Check your internet."),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: _route,
-                      child: const Text('Retry'),
-                    ),
-                  ],
+      body: SafeArea(
+        child: Stack(
+          children: [
+            const Center(child: LogoMark(size: 120)),
+            if (_failed)
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: EmptyState(
+                  icon: Icons.cloud_off_outlined,
+                  title: "Couldn't connect",
+                  hint: 'Check your internet connection.',
+                  isError: true,
+                  action: FilledButton(
+                    onPressed: _route,
+                    child: const Text('Retry'),
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

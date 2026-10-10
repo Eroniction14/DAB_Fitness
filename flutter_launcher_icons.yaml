@@ -1,0 +1,11 @@
+# App icon. Source images come from tool/make_icons.py.
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  adaptive_icon_monochrome: "assets/icon/app_icon_foreground.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true

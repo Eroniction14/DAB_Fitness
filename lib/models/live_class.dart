@@ -68,6 +68,12 @@ class LiveClass {
 
   DateTime? get endsAt => startsAt?.add(Duration(minutes: durationMinutes));
 
+  /// Whether the class is happening at [now] (started, not yet over).
+  bool isLive(DateTime now) {
+    final start = startsAt;
+    return start != null && !start.isAfter(now) && !isOver(now);
+  }
+
   /// Whether the class has finished by [now]. Malformed dates count as over.
   bool isOver(DateTime now) {
     final end = endsAt;

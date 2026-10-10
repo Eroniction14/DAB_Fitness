@@ -106,8 +106,18 @@ rotate the Agora App ID before this history is ever published.
 - Font: Plus Jakarta Sans, bundled in `assets/fonts/plus_jakarta_sans/` (OFL). No google_fonts.
 - Dark mode follows the system. `test/theme_test.dart` checks WCAG AA contrast for both themes.
 - Navigation: `UserShell` (`/home`: Home, Trainings, Bookings, Profile) and `TrainerShell`
-  (`/trainerHome`: Bookings, Classes, Profile). Shared widgets: `AppCard`, `EmptyState`,
-  `SkeletonList`, `InitialsAvatar`, `RefreshableList`.
+  (`/trainerHome`: Bookings, Classes, Profile). Every tab starts with `PageHeader`
+  (title, subtitle, initials avatar that opens the Profile tab via `ShellScope`).
+- Shared widgets in `lib/widgets/`: `AppCard`, `EmptyState`, `SkeletonList`, `InitialsAvatar`,
+  `RefreshableList`, `PageHeader`, `AuthLayout`/`PasswordField`, `BusyFilledButton`,
+  `PickerTile`, `SheetBody`/`showBookingSheet`, `LiveClassCard`, `InfoChip`/`LiveBadge`,
+  `RatingStars`, `WorkoutTile`. Booking a trainer goes through `screens/trainers/book_trainer.dart`.
+- App icon / splash: `python tool/make_icons.py` draws the mark into `assets/icon/` and
+  `assets/images/logo_mark.png`; then `dart run flutter_launcher_icons` and
+  `dart run flutter_native_splash:create`. After running them, revert the change
+  flutter_launcher_icons makes to `ios/Runner.xcodeproj/project.pbxproj`
+  (it wrongly sets ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = AppIcon).
+- Screenshots for the README live in `docs/screenshots/{light,dark}/`.
 
 ## iOS
 

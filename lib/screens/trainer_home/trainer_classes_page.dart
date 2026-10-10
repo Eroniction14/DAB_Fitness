@@ -10,7 +10,10 @@ import 'package:dab_fitness/models/live_class.dart';
 import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
 import 'package:dab_fitness/screens/live_class/call_page.dart';
-import 'package:dab_fitness/widgets/app_card.dart';
+import 'package:dab_fitness/widgets/booking_sheet.dart';
+import 'package:dab_fitness/widgets/live_class_card.dart';
+import 'package:dab_fitness/widgets/page_header.dart';
+import 'package:dab_fitness/widgets/picker_tile.dart';
 import 'package:dab_fitness/widgets/refreshable_list.dart';
 
 /// Trainer: my upcoming live classes, updated live, with a FAB to schedule
@@ -30,7 +33,7 @@ class _TrainerClassesPageState extends State<TrainerClassesPage> {
   void initState() {
     super.initState();
     _classes = context.read<BookingModel>().watchLiveClasses(mine: true);
-    // Re-filter once a minute so classes disappear when they end.
+    // Re-filter once a minute so classes go live / disappear on time.
     _ticker = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -50,9 +53,11 @@ class _TrainerClassesPageState extends State<TrainerClassesPage> {
 
   Future<void> _scheduleClass() async {
     final trainerName = context.read<DatabaseModel>().getTrainer.name;
-    final details = await showDialog<_ClassDetails>(
+    final details = await showModalBottomSheet<_ClassDetails>(
       context: context,
-      builder: (_) => const _LiveClassDialog(),
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => const _ScheduleClassSheet(),
     );
     if (details == null || !mounted) return;
 
@@ -82,68 +87,39 @@ class _TrainerClassesPageState extends State<TrainerClassesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Classes')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _scheduleClass,
         icon: const Icon(Icons.add),
         label: const Text('Schedule class'),
       ),
-      body: StreamBuilder<List<LiveClass>>(
-        stream: _classes,
-        builder: (context, snapshot) => RefreshableList<LiveClass>(
-          items: upcomingClasses(snapshot.data ?? const [], DateTime.now()),
-          isLoading: !snapshot.hasData && !snapshot.hasError,
-          error: snapshot.error,
-          onRefresh: _refresh,
-          emptyIcon: Icons.live_tv_outlined,
-          emptyTitle: 'No upcoming classes',
-          emptyHint: 'Schedule a live class for your clients.',
-          // Leave room for the FAB under the last card.
-          padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screen, AppSpacing.lg, AppSpacing.screen, 96),
-          itemBuilder: (context, liveClass) =>
-              _ClassTile(liveClass, key: ValueKey(liveClass.key)),
-        ),
-      ),
-    );
-  }
-}
-
-class _ClassTile extends StatelessWidget {
-  final LiveClass liveClass;
-  const _ClassTile(this.liveClass, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final text = context.textStyles;
-    final secondary = context.appColors.textSecondary;
-    return AppCard(
-      child: Row(
+      body: Column(
         children: [
+          const PageHeader(
+              title: 'Classes', subtitle: 'Your upcoming live classes'),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(liveClass.title,
-                    style: text.titleMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  '${liveClass.date} · ${liveClass.time} · '
-                  '${liveClass.durationMinutes} min',
-                  style: text.bodyMedium?.copyWith(color: secondary),
+            child: StreamBuilder<List<LiveClass>>(
+              stream: _classes,
+              builder: (context, snapshot) => RefreshableList<LiveClass>(
+                items:
+                    upcomingClasses(snapshot.data ?? const [], DateTime.now()),
+                isLoading: !snapshot.hasData && !snapshot.hasError,
+                error: snapshot.error,
+                onRefresh: _refresh,
+                emptyIcon: Icons.live_tv_outlined,
+                emptyTitle: 'No upcoming classes',
+                emptyHint: 'Schedule a live class for your clients.',
+                skeletonHeight: 220,
+                // Leave room for the FAB under the last card.
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screen, AppSpacing.lg, AppSpacing.screen, 96),
+                itemBuilder: (context, liveClass) => LiveClassCard(
+                  key: ValueKey(liveClass.key),
+                  liveClass: liveClass,
+                  actionLabel: 'Start',
+                  onJoin: () => openLiveClass(context, liveClass, asHost: true),
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                Text('${liveClass.participants} watching',
-                    style: text.bodySmall),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          FilledButton(
-            onPressed: () => openLiveClass(context, liveClass, asHost: true),
-            child: const Text('Start'),
           ),
         ],
       ),
@@ -151,7 +127,7 @@ class _ClassTile extends StatelessWidget {
   }
 }
 
-// ---------- "Schedule a live class" dialog ----------
+// ---------- "Schedule a live class" bottom sheet ----------
 
 class _ClassDetails {
   final String title;
@@ -161,14 +137,14 @@ class _ClassDetails {
   const _ClassDetails(this.title, this.date, this.time, this.durationMinutes);
 }
 
-class _LiveClassDialog extends StatefulWidget {
-  const _LiveClassDialog();
+class _ScheduleClassSheet extends StatefulWidget {
+  const _ScheduleClassSheet();
 
   @override
-  State<_LiveClassDialog> createState() => _LiveClassDialogState();
+  State<_ScheduleClassSheet> createState() => _ScheduleClassSheetState();
 }
 
-class _LiveClassDialogState extends State<_LiveClassDialog> {
+class _ScheduleClassSheetState extends State<_ScheduleClassSheet> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   DateTime? _date;
@@ -182,7 +158,7 @@ class _LiveClassDialogState extends State<_LiveClassDialog> {
     super.dispose();
   }
 
-  bool _notSunday(DateTime d) => d.weekday != DateTime.sunday;
+  static bool _notSunday(DateTime d) => d.weekday != DateTime.sunday;
 
   DateTime _firstSelectableDay() {
     var day = DateUtils.dateOnly(DateTime.now());
@@ -229,72 +205,54 @@ class _LiveClassDialogState extends State<_LiveClassDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Form(
+      key: _formKey,
+      child: SheetBody(
+        title: 'Schedule a live class',
+        error: _error,
+        action: FilledButton(onPressed: _submit, child: const Text('Schedule')),
+        children: [
+          TextFormField(
+            controller: _titleController,
+            textInputAction: TextInputAction.done,
+            decoration: const InputDecoration(labelText: 'Class title'),
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'Enter a title' : null,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          PickerTile(
+            icon: Icons.event_outlined,
+            label: 'Date',
+            value: _date == null
+                ? null
+                : DateFormat('EEE, d MMM yyyy').format(_date!),
+            placeholder: 'Choose a day (Mon–Sat)',
+            onTap: _pickDate,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          PickerTile(
+            icon: Icons.schedule,
+            label: 'Start time',
+            value: _time?.format(context),
+            placeholder: 'Choose a time',
+            onTap: _pickTime,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text('Duration', style: context.textStyles.labelLarge),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
             children: [
-              Text("Class title", style: context.textStyles.titleLarge),
-              TextFormField(
-                controller: _titleController,
-                decoration:
-                    const InputDecoration(hintText: 'Enter the class title'),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Enter a title' : null,
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _pickDate,
-                      icon: const Icon(Icons.event),
-                      label: Text(_date == null
-                          ? 'Date'
-                          : DateFormat('d MMM, yyyy').format(_date!)),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _pickTime,
-                      icon: const Icon(Icons.access_time),
-                      label:
-                          Text(_time == null ? 'Time' : _time!.format(context)),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<int>(
-                initialValue: _duration,
-                decoration: const InputDecoration(labelText: 'Duration'),
-                items: [
-                  for (final minutes in LiveClass.durationChoices)
-                    DropdownMenuItem(
-                        value: minutes, child: Text('$minutes minutes')),
-                ],
-                onChanged: (v) => setState(() => _duration = v ?? _duration),
-              ),
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(_error!,
-                      style: TextStyle(
-                          color: Theme.of(context).colorScheme.error)),
+              for (final minutes in LiveClass.durationChoices)
+                ChoiceChip(
+                  label: Text('$minutes min'),
+                  selected: _duration == minutes,
+                  onSelected: (_) => setState(() => _duration = minutes),
                 ),
-              const SizedBox(height: 30),
-              FilledButton(
-                onPressed: _submit,
-                child: const Text("Schedule"),
-              ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }

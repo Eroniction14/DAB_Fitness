@@ -36,6 +36,8 @@ class _TrainerShellState extends State<TrainerShell> {
     return ShellScope(
       currentTab: _tab,
       selectTab: (tab) => setState(() => _tab = tab),
+      bookingsTab: TrainerShell.bookingsTab,
+      profileTab: TrainerShell.profileTab,
       child: Scaffold(
         body: IndexedStack(
           index: _tab,

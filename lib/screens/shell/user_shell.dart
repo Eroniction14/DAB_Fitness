@@ -38,6 +38,9 @@ class _UserShellState extends State<UserShell> {
     return ShellScope(
       currentTab: _tab,
       selectTab: (tab) => setState(() => _tab = tab),
+      bookingsTab: UserShell.bookingsTab,
+      profileTab: UserShell.profileTab,
+      trainingsTab: UserShell.trainingsTab,
       child: Scaffold(
         body: IndexedStack(
           index: _tab,

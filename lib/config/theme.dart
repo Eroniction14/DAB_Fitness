@@ -292,9 +292,19 @@ class AppColors extends ThemeExtension<AppColors> {
   /// Bottom-up gradient that keeps text on photos readable.
   final Gradient photoScrim;
 
+  /// Translucent pill behind chips drawn on photos.
+  final Color photoChip;
+
+  /// Panel behind the onboarding illustrations (they have white
+  /// backgrounds, so this stays white in dark mode too).
+  final Color illustration;
+
   /// The video call screen stays dark in both themes.
   final Color callBackground;
   final Color onCall;
+
+  /// Star ratings.
+  final Color rating;
 
   /// The "LIVE" badge on classes happening now.
   final Color live;
@@ -312,6 +322,9 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.cardShadow,
     required this.onPhoto,
     required this.photoScrim,
+    required this.photoChip,
+    required this.illustration,
+    required this.rating,
     required this.callBackground,
     required this.onCall,
     required this.live,
@@ -339,6 +352,9 @@ class AppColors extends ThemeExtension<AppColors> {
     ],
     onPhoto: Color(0xFFFFFFFF),
     photoScrim: _scrim,
+    photoChip: Color(0x8C000000),
+    illustration: Color(0xFFFFFFFF),
+    rating: Color(0xFFF59E0B),
     callBackground: Color(0xFF000000),
     onCall: Color(0xFFFFFFFF),
     live: Color(0xFFD32F2F),
@@ -359,6 +375,9 @@ class AppColors extends ThemeExtension<AppColors> {
     ],
     onPhoto: Color(0xFFFFFFFF),
     photoScrim: _scrim,
+    photoChip: Color(0x8C000000),
+    illustration: Color(0xFFFFFFFF),
+    rating: Color(0xFFFBBF24),
     callBackground: Color(0xFF000000),
     onCall: Color(0xFFFFFFFF),
     live: Color(0xFFEF5350),
@@ -378,6 +397,9 @@ class AppColors extends ThemeExtension<AppColors> {
     List<BoxShadow>? cardShadow,
     Color? onPhoto,
     Gradient? photoScrim,
+    Color? photoChip,
+    Color? illustration,
+    Color? rating,
     Color? callBackground,
     Color? onCall,
     Color? live,
@@ -395,6 +417,9 @@ class AppColors extends ThemeExtension<AppColors> {
         cardShadow: cardShadow ?? this.cardShadow,
         onPhoto: onPhoto ?? this.onPhoto,
         photoScrim: photoScrim ?? this.photoScrim,
+        photoChip: photoChip ?? this.photoChip,
+        illustration: illustration ?? this.illustration,
+        rating: rating ?? this.rating,
         callBackground: callBackground ?? this.callBackground,
         onCall: onCall ?? this.onCall,
         live: live ?? this.live,
@@ -417,6 +442,9 @@ class AppColors extends ThemeExtension<AppColors> {
       cardShadow: BoxShadow.lerpList(cardShadow, other.cardShadow, t)!,
       onPhoto: c(onPhoto, other.onPhoto),
       photoScrim: Gradient.lerp(photoScrim, other.photoScrim, t)!,
+      photoChip: c(photoChip, other.photoChip),
+      illustration: c(illustration, other.illustration),
+      rating: c(rating, other.rating),
       callBackground: c(callBackground, other.callBackground),
       onCall: c(onCall, other.onCall),
       live: c(live, other.live),

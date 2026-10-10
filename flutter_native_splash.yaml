@@ -1,0 +1,17 @@
+# Native launch splash: the mark on the app background (light and dark).
+# Colours match AppColors.background in lib/config/theme.dart.
+#   dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#F7F8FA"
+  color_dark: "#0E1113"
+  image: assets/icon/splash_mark.png
+  image_dark: assets/icon/splash_mark.png
+  android_12:
+    color: "#F7F8FA"
+    color_dark: "#0E1113"
+    image: assets/icon/splash_android12.png
+    image_dark: assets/icon/splash_android12.png
+  android: true
+  ios: true
+  web: false
+  fullscreen: false

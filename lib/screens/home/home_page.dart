@@ -1,19 +1,22 @@
-import 'package:card_swiper/card_swiper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:dab_fitness/config/theme.dart';
 import 'package:dab_fitness/data/workout_data.dart';
+import 'package:dab_fitness/models/booking.dart';
+import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
-import 'package:dab_fitness/widgets/video_player_widget.dart';
+import 'package:dab_fitness/screens/shell/shell_scope.dart';
+import 'package:dab_fitness/widgets/app_card.dart';
+import 'package:dab_fitness/widgets/booking_tile.dart';
+import 'package:dab_fitness/widgets/page_header.dart';
+import 'package:dab_fitness/widgets/workout_tile.dart';
 
-class HomePage extends StatefulWidget {
+/// The user's Home tab: greeting, next session, top picks and quick
+/// workouts.
+class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  @override
-  State<HomePage> createState() => _HomePage();
-}
-
-class _HomePage extends State<HomePage> {
   /// "Good morning" / "Good afternoon" / "Good evening".
   static String greeting(DateTime now) => now.hour < 12
       ? 'Good morning'
@@ -25,189 +28,222 @@ class _HomePage extends State<HomePage> {
   Widget build(BuildContext context) {
     final user = context.watch<DatabaseModel>().getUser;
     final firstName = user.name.trim().split(' ').first;
+    final hello = greeting(DateTime.now());
+
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar.large(
-            title: Text(firstName.isEmpty
-                ? greeting(DateTime.now())
-                : '${greeting(DateTime.now())}, $firstName'),
+      body: Column(
+        children: [
+          PageHeader(
+            title: firstName.isEmpty ? hello : '$hello, $firstName',
+            subtitle: "Ready for today's workout?",
           ),
-          SliverFillRemaining(child: buildPage()),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+              children: const [
+                _Section('Next session'),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+                  child: _NextSessionCard(),
+                ),
+                _Section('Top picks for you'),
+                _TopPicks(),
+                _Section('5 minute workouts'),
+                _QuickWorkouts(),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
+}
 
-  // ---------- Main page content ----------
+class _Section extends StatelessWidget {
+  final String title;
+  const _Section(this.title);
 
-  Widget buildPage() {
-    const images = [
-      'assets/images/1.jpg',
-      'assets/images/2.jpg',
-      'assets/images/3.jpg',
-    ];
-    return ListView(
-      children: [
-        Card(
-          margin: const EdgeInsets.symmetric(horizontal: 10),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          child: Stack(
-            children: [
-              SizedBox(
-                height: 200,
-                child: Swiper(
-                  itemBuilder: (context, index) =>
-                      Image.asset(images[index], fit: BoxFit.fill),
-                  itemCount: images.length,
-                  pagination: const SwiperPagination(),
-                ),
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screen, AppSpacing.xl, AppSpacing.screen, AppSpacing.md),
+        child: Semantics(
+          header: true,
+          child: Text(title, style: context.textStyles.titleMedium),
+        ),
+      );
+}
+
+/// The soonest upcoming booking, or a prompt to book one.
+class _NextSessionCard extends StatelessWidget {
+  const _NextSessionCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final booking = context.watch<BookingModel>();
+    final shell = ShellScope.maybeOf(context);
+    final now = DateTime.now();
+    final upcoming = booking.getAppoinments
+        .where((b) => b.startsAt?.isAfter(now) ?? false)
+        .toList()
+      ..sort((a, b) => a.startsAt!.compareTo(b.startsAt!));
+    final Booking? next = upcoming.firstOrNull;
+
+    if (booking.bookingsLoading && next == null) {
+      return Container(
+        height: 88,
+        decoration: BoxDecoration(
+          color: context.appColors.inputFill,
+          borderRadius: AppRadius.cardAll,
+        ),
+      );
+    }
+    if (next == null) {
+      final trainingsTab = shell?.trainingsTab;
+      return AppCard(
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('No session booked',
+                      style: context.textStyles.titleMedium),
+                  Text('Book a trainer for an in-person session.',
+                      style: context.textStyles.bodyMedium
+                          ?.copyWith(color: context.appColors.textSecondary)),
+                ],
               ),
-              Positioned(
-                top: 20,
-                left: 5,
-                child: Container(
-                  width: 125,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    border: Border(
-                      left: BorderSide(color: Colors.red.shade900, width: 10),
-                    ),
-                    gradient: const LinearGradient(
-                      colors: [Color(0x70434444), Color(0x20ffffff)],
-                    ),
-                  ),
-                  child: Text("Trending",
-                      style: Theme.of(context).textTheme.titleLarge),
-                ),
+            ),
+            if (shell != null && trainingsTab != null) ...[
+              const SizedBox(width: AppSpacing.md),
+              FilledButton(
+                onPressed: () => shell.selectTab(trainingsTab),
+                child: const Text('Book'),
               ),
             ],
-          ),
+          ],
         ),
-        const SizedBox(height: 50),
-        buildListHorizontal("Top picks for you"),
-        const SizedBox(height: 20),
-        buildListVertical("5 Minutes work out"),
-      ],
-    );
-  }
-
-  void _playWorkout(int index) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: VideoPlayerApp(workoutList[index].videos),
+      );
+    }
+    return AppCard(
+      onTap: shell == null ? null : () => shell.selectTab(shell.bookingsTab),
+      child: Row(
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: context.colors.primaryContainer,
+              borderRadius: AppRadius.inputAll,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Icon(Icons.event_available,
+                  color: context.colors.onPrimaryContainer),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${friendlyDate(next.date)} at ${next.time}',
+                    style: context.textStyles.titleMedium),
+                if (next.address.isNotEmpty)
+                  Text(next.address,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textStyles.bodyMedium
+                          ?.copyWith(color: context.appColors.textSecondary)),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right, color: context.appColors.textSecondary),
+        ],
       ),
     );
   }
+}
 
-  Widget buildListHorizontal(String title) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Card(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          child: Container(
-            height: 250,
-            margin: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              shrinkWrap: true,
-              itemCount: workoutList.length,
-              separatorBuilder: (context, index) => const SizedBox(width: 10),
-              itemBuilder: (context, index) => InkWell(
-                onTap: () => _playWorkout(index),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 200,
-                      height: 200,
-                      margin: const EdgeInsets.symmetric(vertical: 10),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.asset(workoutList[index].image,
-                            fit: BoxFit.fill),
-                      ),
+/// Horizontal workout cards: photo with the name under it.
+class _TopPicks extends StatelessWidget {
+  const _TopPicks();
+
+  static const _cardWidth = 168.0;
+  static const _imageHeight = 132.0;
+
+  @override
+  Widget build(BuildContext context) {
+    // Room for two lines of the name at the current text size.
+    final textHeight = MediaQuery.textScalerOf(context)
+            .scale(context.textStyles.titleSmall!.fontSize!) *
+        1.3 *
+        2;
+    return SizedBox(
+      height: _imageHeight + textHeight + AppSpacing.card * 2 + AppSpacing.sm,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+        // Leave room for the card shadow.
+        clipBehavior: Clip.none,
+        itemCount: workoutList.length,
+        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+        itemBuilder: (context, index) {
+          final workout = workoutList[index];
+          return SizedBox(
+            width: _cardWidth,
+            child: AppCard(
+              clip: true,
+              padding: EdgeInsets.zero,
+              onTap: () => playWorkout(context, workout),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    height: _imageHeight,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.asset(workout.image, fit: BoxFit.cover),
+                        Center(
+                          child: Icon(Icons.play_circle_fill,
+                              size: 40, color: context.appColors.onPhoto),
+                        ),
+                      ],
                     ),
-                    Text(workoutList[index].name,
-                        style: Theme.of(context).textTheme.titleMedium),
-                  ],
-                ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Text(workout.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textStyles.titleSmall),
+                  ),
+                ],
               ),
             ),
-          ),
-        ),
-        Positioned(
-          top: -30,
-          left: 10,
-          child: Card(
-            elevation: 10,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child:
-                  Text(title, style: Theme.of(context).textTheme.titleMedium),
-            ),
-          ),
-        ),
-      ],
+          );
+        },
+      ),
     );
   }
+}
 
-  Widget buildListVertical(String title) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 20),
-          child: Text(title, style: Theme.of(context).textTheme.titleLarge),
-        ),
-        Container(
-          height: 500,
-          margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-          child: ListView.separated(
-            shrinkWrap: true,
-            itemCount: workoutList.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 10),
-            itemBuilder: (context, index) => InkWell(
-              onTap: () => _playWorkout(index),
-              child: Card(
-                elevation: 5,
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 100,
-                        height: 100,
-                        margin: const EdgeInsets.symmetric(vertical: 10),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.asset(workoutList[index].image,
-                              fit: BoxFit.fill),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          workoutList[index].name,
-                          style: Theme.of(context).textTheme.titleMedium,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const Icon(Icons.play_circle_outline),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
+/// A list of short workouts with thumbnail, sets/reps and target muscles.
+class _QuickWorkouts extends StatelessWidget {
+  const _QuickWorkouts();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+      child: Column(
+        children: [
+          for (final workout in workoutList) ...[
+            WorkoutTile(workout, onTap: () => playWorkout(context, workout)),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ],
+      ),
     );
   }
 }

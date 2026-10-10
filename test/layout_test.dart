@@ -10,8 +10,13 @@ import 'package:dab_fitness/models/user_profile.dart';
 import 'package:dab_fitness/providers/auth_model.dart';
 import 'package:dab_fitness/providers/booking_model.dart';
 import 'package:dab_fitness/providers/database_model.dart';
+import 'package:dab_fitness/screens/auth/login_page.dart';
+import 'package:dab_fitness/screens/auth/signup_page.dart';
+import 'package:dab_fitness/screens/onboarding/launch_page.dart';
+import 'package:dab_fitness/screens/onboarding/welcome_page.dart';
 import 'package:dab_fitness/screens/shell/trainer_shell.dart';
 import 'package:dab_fitness/screens/shell/user_shell.dart';
+import 'package:dab_fitness/screens/trainers/trainer_detail_page.dart';
 import 'package:dab_fitness/screens/trainers/trainer_list_page.dart';
 import 'package:dab_fitness/services/auth_service.dart';
 import 'package:dab_fitness/services/database_service.dart';
@@ -163,9 +168,9 @@ void main() {
         await tester.pumpAndSettle();
 
         // A RenderFlex overflow would already have failed the test.
-        final button = tester.getRect(find.text('BOOK NOW'));
+        final button = tester.getRect(find.text('Book'));
         expect(button.bottom, lessThanOrEqualTo(size.height - 48),
-            reason: 'BOOK NOW must be above the gesture bar');
+            reason: 'Book must be above the gesture bar');
         expect(button.top, greaterThanOrEqualTo(24));
       });
 
@@ -198,13 +203,18 @@ void main() {
         await _openTab(tester, 'Classes');
         expect(find.textContaining('Full-body HIIT'), findsOneWidget);
 
-        // The Schedule FAB must sit above the navigation bar and not cover
-        // the class card's Start button.
+        // The Schedule FAB must sit above the navigation bar, and the list
+        // must scroll far enough that the last card's Start button comes
+        // out from under it (on small screens it can start underneath).
         final fab = tester.getRect(find.byType(FloatingActionButton));
         final bar = tester.getRect(find.byType(NavigationBar));
-        final start = tester.getRect(find.text('Start'));
         expect(fab.bottom, lessThanOrEqualTo(bar.top));
-        expect(fab.overlaps(start), isFalse);
+        await tester.drag(
+            find.textContaining('Full-body HIIT'), const Offset(0, -400));
+        await _settle(tester);
+        final start = tester.getRect(find.text('Start'));
+        expect(fab.overlaps(start), isFalse,
+            reason: 'Start must be reachable once scrolled to the end');
 
         await _openTab(tester, 'Profile');
         await _openTab(tester, 'Bookings');
@@ -240,5 +250,32 @@ void main() {
       expect(find.text('No upcoming classes'), findsOneWidget);
       await expectLater(tester, meetsGuideline(textContrastGuideline));
     });
+  }
+
+  final standalone = <String, Widget Function()>{
+    'onboarding': () => const LaunchPage(),
+    'welcome': () => const WelcomePage(),
+    'login': () => const LoginPage(),
+    'sign-up': () => const SignUpPage(),
+    'trainer detail': () => TrainerDetail(_trainer),
+  };
+  for (final MapEntry(key: name, value: build) in standalone.entries) {
+    for (final (size, textScale) in [
+      (const Size(320, 568), 1.3),
+      (const Size(411, 914), 1.0),
+    ]) {
+      for (final dark in [false, true]) {
+        testWidgets(
+            '$name lays out and meets guidelines on ${size.width.toInt()}px '
+            'at x$textScale (${dark ? 'dark' : 'light'})', (tester) async {
+          _setScreen(tester, size);
+          await tester
+              .pumpWidget(_app(build(), textScale: textScale, dark: dark));
+          await _settle(tester);
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(textContrastGuideline));
+        });
+      }
+    }
   }
 }

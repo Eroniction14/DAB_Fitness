@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
+import 'package:dab_fitness/config/theme.dart';
 import 'package:dab_fitness/screens/auth/login_page.dart';
 import 'package:dab_fitness/screens/auth/signup_detail_page.dart';
-import 'package:dab_fitness/widgets/fade_animation.dart';
+import 'package:dab_fitness/widgets/auth_layout.dart';
 
 class SignUpPage extends StatefulWidget {
   static const routeName = '/signUp';
@@ -40,186 +40,74 @@ class _SignUpPageState extends State<SignUpPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
+    return AuthLayout(
+      title: 'Create your account',
+      subtitle: "It's free and takes a minute.",
+      footer: AuthFooterLink(
+        prompt: 'Already have an account?',
+        action: 'Log in',
+        onPressed: () =>
+            Navigator.of(context).pushReplacementNamed(LoginPage.routeName),
       ),
-      body: SafeArea(
-        child: Form(
+      children: [
+        Form(
           key: _formKey,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+          child: AutofillGroup(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const FadeAnimation(
-                  1,
-                  Text("Sign up",
-                      style:
-                          TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+                TextFormField(
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.email],
+                  decoration: const InputDecoration(labelText: 'Email'),
+                  validator: (value) {
+                    final v = value?.trim() ?? '';
+                    if (v.isEmpty || !v.contains('@')) return 'Invalid email!';
+                    return null;
+                  },
+                  onSaved: (value) => _authData['email'] = value?.trim() ?? '',
                 ),
-                const SizedBox(height: 20),
-                FadeAnimation(
-                  1.2,
-                  Text("Create an account, it's free",
-                      style:
-                          TextStyle(fontSize: 15, color: Colors.grey.shade700)),
+                formGap,
+                PasswordField(
+                  controller: _passwordController,
+                  validator: (value) => (value == null || value.length < 6)
+                      ? 'Password must be at least 6 characters'
+                      : null,
+                  onSaved: (value) => _authData['password'] = value ?? '',
                 ),
-                const SizedBox(height: 40),
-                FadeAnimation(
-                  1.3,
-                  _input(
-                    label: "Email",
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      final v = value?.trim() ?? '';
-                      if (v.isEmpty || !v.contains('@')) {
-                        return 'Invalid email!';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) =>
-                        _authData['email'] = value?.trim() ?? '',
-                  ),
+                formGap,
+                PasswordField(
+                  label: 'Confirm password',
+                  textInputAction: TextInputAction.done,
+                  validator: (value) => value != _passwordController.text
+                      ? 'Passwords do not match!'
+                      : null,
                 ),
-                FadeAnimation(
-                  1.3,
-                  _input(
-                    label: "Password",
-                    obscureText: true,
-                    controller: _passwordController,
-                    validator: (value) => (value == null || value.length < 6)
-                        ? 'Password must be at least 6 characters'
-                        : null,
-                    onSaved: (value) => _authData['password'] = value ?? '',
-                  ),
+                const SizedBox(height: AppSpacing.xl),
+                Text('I am a', style: context.textStyles.labelLarge),
+                const SizedBox(height: AppSpacing.sm),
+                SegmentedButton<int>(
+                  segments: const [
+                    ButtonSegment(
+                        value: 0,
+                        label: Text('User'),
+                        icon: Icon(Icons.person_outline)),
+                    ButtonSegment(
+                        value: 1,
+                        label: Text('Trainer'),
+                        icon: Icon(Icons.fitness_center)),
+                  ],
+                  selected: {_accountType},
+                  onSelectionChanged: (selection) =>
+                      setState(() => _accountType = selection.first),
                 ),
-                FadeAnimation(
-                  1.3,
-                  _input(
-                    label: "Confirm Password",
-                    obscureText: true,
-                    validator: (value) => value != _passwordController.text
-                        ? 'Passwords do not match!'
-                        : null,
-                  ),
-                ),
-                FadeAnimation(
-                  1.5,
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("I am a",
-                          style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w400,
-                              color: Colors.black87)),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: SegmentedButton<int>(
-                          segments: const [
-                            ButtonSegment(
-                                value: 0,
-                                label: Text("User"),
-                                icon: Icon(Icons.person)),
-                            ButtonSegment(
-                                value: 1,
-                                label: Text("Trainer"),
-                                icon: Icon(Icons.fitness_center)),
-                          ],
-                          selected: {_accountType},
-                          onSelectionChanged: (selection) =>
-                              setState(() => _accountType = selection.first),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 40),
-                FadeAnimation(
-                  1.5,
-                  Container(
-                    padding: const EdgeInsets.only(top: 3, left: 3),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(50),
-                      border: Border.all(color: Colors.black),
-                    ),
-                    child: MaterialButton(
-                      minWidth: double.infinity,
-                      height: 60,
-                      onPressed: _submit,
-                      color: Colors.greenAccent,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50)),
-                      child: const Text("Next",
-                          style: TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 18)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 30),
-                FadeAnimation(
-                  1.6,
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Already have an account?"),
-                      InkWell(
-                        onTap: () => Navigator.of(context)
-                            .pushReplacementNamed(LoginPage.routeName),
-                        child: const Text(" Login",
-                            style: TextStyle(
-                                fontWeight: FontWeight.w600, fontSize: 18)),
-                      ),
-                    ],
-                  ),
-                ),
+                const SizedBox(height: AppSpacing.xl),
+                FilledButton(onPressed: _submit, child: const Text('Next')),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _input({
-    required String label,
-    required FormFieldValidator<String> validator,
-    FormFieldSetter<String>? onSaved,
-    TextEditingController? controller,
-    bool obscureText = false,
-    TextInputType? keyboardType,
-  }) {
-    final border =
-        OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade400));
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w400,
-                color: Colors.black87)),
-        const SizedBox(height: 5),
-        TextFormField(
-          controller: controller,
-          obscureText: obscureText,
-          keyboardType: keyboardType,
-          textInputAction: TextInputAction.next,
-          decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-            enabledBorder: border,
-            border: border,
-          ),
-          validator: validator,
-          onSaved: onSaved,
-        ),
-        const SizedBox(height: 30),
       ],
     );
   }
