@@ -39,7 +39,19 @@ Built with Flutter, Firebase (Auth + Realtime Database) and Agora.
 | ![Home](docs/screenshots/light/08_home.png) | ![In person](docs/screenshots/light/10_trainings_in_person.png) | ![Videos](docs/screenshots/light/11_trainings_videos.png) | ![Live](docs/screenshots/light/12_trainings_live.png) |
 | ![Trainers](docs/screenshots/light/13_trainer_list.png) | ![Trainer detail](docs/screenshots/light/14_trainer_detail.png) | ![Booking](docs/screenshots/light/15_booking_sheet.png) | ![Profile](docs/screenshots/light/17_profile.png) |
 
-More in [`docs/screenshots/`](docs/screenshots/).
+**Trainers**
+
+| | | | |
+|---|---|---|---|
+| ![Trainer bookings](docs/screenshots/light/20_trainer_bookings.png) | ![Classes](docs/screenshots/light/21_trainer_classes.png) | ![Schedule a class](docs/screenshots/light/22_schedule_class_sheet.png) | ![Trainer profile](docs/screenshots/light/23_trainer_profile.png) |
+
+**Dark mode** (follows the system setting)
+
+| | | | |
+|---|---|---|---|
+| ![Home, dark](docs/screenshots/dark/08_home.png) | ![Trainings, dark](docs/screenshots/dark/10_trainings_in_person.png) | ![Trainer detail, dark](docs/screenshots/dark/14_trainer_detail.png) | ![Classes, dark](docs/screenshots/dark/21_trainer_classes.png) |
+
+All screenshots, light and dark, are in [`docs/screenshots/`](docs/screenshots/).
 
 ## Tech stack
 

@@ -163,7 +163,7 @@ Ask the user before deleting anything that is not listed here.
 - Hide past live classes. Live participant count when joining/leaving a class.
 - Pull-to-refresh and proper empty/error states on every list.
 
-### Phase 4 — Polish (4a, 4b, 4b polish, 4c done; dark-mode and trainer screenshots pending)
+### Phase 4 — Polish — DONE (4a, 4b, 4b polish, 4c, screenshots)
 - Central theme (colours, text styles) — remove scattered hard-coded styles.
 - Unit tests for models/providers; GitHub Actions running analyze + test.
 - README describing the app, setup steps, and the 2021 -> 2026 migration.
