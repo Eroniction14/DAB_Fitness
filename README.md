@@ -96,7 +96,9 @@ lib/
    ```
 
 ### 3. Agora (live classes)
-Create an Agora project in testing mode (App ID only), then:
+The app joins calls with an App ID and no token, which only works for an
+Agora project in testing mode (see [Known limitations](#known-limitations)).
+Put the App ID in a local config file:
 ```bash
 cp config/env.example.json config/env.json
 ```
@@ -123,6 +125,14 @@ see [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 Mac yet. To finish it there: run `pod install`, add `GoogleService-Info.plist`,
 and enable the camera, microphone and location permissions for
 `permission_handler` in the Podfile.
+
+## Known limitations
+
+- **Live video calls need an Agora token server.** The app currently joins
+  calls with only an App ID and an empty token, which works only for Agora
+  projects in testing mode. New Agora projects require Secure mode, where
+  every join needs a token issued by a server, so live classes won't connect
+  with a newly created project. A token server is planned.
 
 ## From 2021 to 2026
 
