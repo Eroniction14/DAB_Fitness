@@ -438,7 +438,7 @@ const List<VideoCategory> offlineVideosData = [
           videos: "assets/downward_dog.mp4",
           reps: "8-12",
           sets: 4,
-          image: "assets/images/workout/Barbell_Back_squat.jpg",
+          image: "assets/images/workout/Barbell_Back_Squat.jpg",
           muscleGroupTargeted:
               "Quadriceps, Gluteals, Hamstrings and Spinal Erectors",
         ),
