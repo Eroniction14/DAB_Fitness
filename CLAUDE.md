@@ -17,7 +17,9 @@ on the Android emulator. We are now refactoring it into a proper production-styl
 - Never install tools, caches or SDKs to C:. Configure any new tool to use E:.
 - Emulator: `emulator-5554` (Android API 37). The user starts and stops it — do not.
   Verify with `flutter build apk --debug --dart-define-from-file=config/env.json`
-  then `flutter install -d emulator-5554`. (VS Code: `.vscode/launch.json` adds the flag.)
+  then `adb -s emulator-5554 install -r build/app/outputs/flutter-apk/app-debug.apk`.
+  Do NOT use `flutter install`: it uninstalls the app first, which wipes its data and
+  signs the user out. (VS Code: `.vscode/launch.json` adds the dart-define flag.)
 - `adb screencap` can return an all-black Flutter surface in some emulator sessions even
   when the app is fine; if so, ask the user what the emulator window shows.
 - Shell is PowerShell. When writing files from PowerShell use UTF-8 without BOM.
